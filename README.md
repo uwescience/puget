@@ -11,11 +11,11 @@ Tools for munging data from Puget Sound Region tri-county HMIS.
 
 ## Dependencies:
 
-pandas
-numpy
-matplotlib
-nose (for testing)
-sphinx (for docs)
+- pandas
+- numpy
+- matplotlib
+- nose (for testing)
+- sphinx (for docs)
 
 
 ## Steps:
