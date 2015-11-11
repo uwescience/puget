@@ -1,3 +1,6 @@
+import pandas as pd
+import os.path as op
+import numpy as np
 
 #Paths of csvs
 FILEPATHS = {2011:'2011_CSV_4_6-1-15', 2012:'2012_CSV_4_6-1-15',
@@ -10,7 +13,7 @@ IGNORE_IN_DEDUP=['DateCreated', 'DateUpdated', 'UserID', 'DateDeleted',
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
-def read_table(filename, data_dir=data_dir, paths=FILEPATHS, years=None,
+def read_table(filename, data_dir, paths=FILEPATHS, years=None,
                    ignore_in_dedup=IGNORE_IN_DEDUP,
                    columns_to_drop=None, categorical_var=None,
                    categorical_unknown=CATEGORICAL_UNKNOWN,
@@ -59,17 +62,19 @@ def read_table(filename, data_dir=data_dir, paths=FILEPATHS, years=None,
 
     if years is None:
         years = paths.keys()
+    if isinstance(years, (int, float)):
+        years = [years]
 
     path_list = [paths[y] for y in years]
 
     # Start by reading the first file into a DataFrame
-    df = pd.read_csv(op.join(data_dir, 'king', path_list[0], filename),
+    df = pd.read_csv(op.join(data_dir, path_list[0], filename),
     			low_memory=False)
     df['CSV_directory'] = path_list[0]
     # Then, for the rest of the files,
     # append to the DataFrame.
     for i in range(1, len(path_list)):
-        this_df = pd.read_csv(op.join(data_dir, 'king', path_list[i], filename),
+        this_df = pd.read_csv(op.join(data_dir, path_list[i], filename),
                               low_memory=False)
         this_df['CSV_directory'] = path_list[i]
         df = df.append(this_df)
