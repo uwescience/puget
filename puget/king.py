@@ -70,13 +70,13 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
     # Start by reading the first file into a DataFrame
     df = pd.read_csv(op.join(data_dir, path_list[0], filename),
     			low_memory=False)
-    df['CSV_directory'] = path_list[0]
+    df['years'] = years[0]
     # Then, for the rest of the files,
     # append to the DataFrame.
     for i in range(1, len(path_list)):
         this_df = pd.read_csv(op.join(data_dir, path_list[i], filename),
                               low_memory=False)
-        this_df['CSV_directory'] = path_list[i]
+        this_df['years'] = years[i]
         df = df.append(this_df)
 
     # Drop duplicate rows, ignoring the columns in ignore_in_dedup.
