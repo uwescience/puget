@@ -1,3 +1,31 @@
+"""
+Functions specific to data from King County HMIS extraction.
+
+King County data is provided in the following format:
+
+    data/king/2011_CSV_4_6-1-15
+             /2012_CSV_4_6-1-15
+             /2013_CSV_4_6-2-15
+             /2014_CSV_4_6-1-15/Affiliation.csv
+                                Client.csv
+                                Disabilities.csv
+                                EmploymentEducation.csv
+                                Enrollment_families.csv
+                                Enrollment.csv
+                                EnrollmentCoC.csv
+                                Exit.csv
+                                Export.csv
+                                Funder.csv
+                                HealthAndDV.csv
+                                IncomeBenefits.csv
+                                Inventory.csv
+                                Organization.csv
+                                Project.csv
+                                ProjectCoC.csv
+                                Services.csv
+                                Site.csv
+"""
+
 import pandas as pd
 import os.path as op
 import numpy as np
@@ -6,57 +34,59 @@ import json
 from data import DATA_PATH
 KING_DATA = op.join(DATA_PATH, 'king')
 
-#Paths of csvs
-FILEPATHS = {2011:'2011_CSV_4_6-1-15', 2012:'2012_CSV_4_6-1-15',
-             2013:'2013_CSV_4_6-2-15',2014:'2014_CSV_4_6-1-15'}
+#  Paths of csvs
+FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
+             2013: '2013_CSV_4_6-2-15', 2014: '2014_CSV_4_6-1-15'}
 
-#columns to not consider when checking for duplicate rows.
-IGNORE_IN_DEDUP=['DateCreated', 'DateUpdated', 'UserID', 'DateDeleted',
-                 'ExportID','CSV_directory']
+#  Columns to not consider when checking for duplicate rows.
+IGNORE_IN_DEDUP = ['DateCreated', 'DateUpdated', 'UserID', 'DateDeleted',
+                   'ExportID', 'CSV_directory']
 
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
-def read_table(filename, data_dir=KING_DATA, paths=FILEPATHS, years=None,
-                   ignore_in_dedup=IGNORE_IN_DEDUP,
-                   columns_to_drop=None, categorical_var=None,
-                   categorical_unknown=CATEGORICAL_UNKNOWN,
-                   time_var=None):
-    ''' Reads in any .csv table from multiple years in the King data.
 
-        Parameters
-        ----------
-        filename : string
-            This should be the filename of the .csv table
+def read_table(filename, data_dir, paths=FILEPATHS, years=None,
+               ignore_in_dedup=IGNORE_IN_DEDUP,
+               columns_to_drop=None, categorical_var=None,
+               categorical_unknown=CATEGORICAL_UNKNOWN,
+               time_var=None):
+    """
+    Read in any .csv table from multiple years in the King data.
 
-        data_dir : string
-            full path to general data folder (usually puget/data)
+    Parameters
+    ----------
+    filename : string
+        This should be the filename of the .csv table
 
-        paths : list
-            list of directories inside data_dir to look for csv files in
+    data_dir : string
+        full path to general data folder (usually puget/data)
 
-        years : list
-            list of years to include, default is to include all years
+    paths : list
+        list of directories inside data_dir to look for csv files in
 
-        ignore_in_dedup : list
-            Generally, duplicate rows may happen when the same record is
-            registered across the .csv files for each year.
+    years : list
+        list of years to include, default is to include all years
 
-        columns_to_drop : list
-            A list of of columns to drop. The default is None.
+    ignore_in_dedup : list
+        Generally, duplicate rows may happen when the same record is
+        registered across the .csv files for each year.
 
-        categorical_var : list
-            A list of categorical (including binary) variables whose values
-            8, 9, 99 should be recoded to NaNs.
+    columns_to_drop : list
+        A list of of columns to drop. The default is None.
 
-        time_var : list
-            A list of time (variables) in yyyy-mm-dd format that are
-            reformatted into pandas timestamps. Default is None.
+    categorical_var : list
+        A list of categorical (including binary) variables whose values
+        8, 9, 99 should be recoded to NaNs.
 
-        Returns
-        ----------
-        dataframe of a csv tables from all included years
-    '''
+    time_var : list
+        A list of time (variables) in yyyy-mm-dd format that are
+        reformatted into pandas timestamps. Default is None.
+
+    Returns
+    ----------
+    dataframe of a csv tables from all included years
+    """
     if columns_to_drop is None:
         columns_to_drop = []
     if categorical_var is None:
@@ -73,7 +103,7 @@ def read_table(filename, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     # Start by reading the first file into a DataFrame
     df = pd.read_csv(op.join(data_dir, path_list[0], filename),
-    			low_memory=False)
+                     low_memory=False)
     df['years'] = years[0]
     # Then, for the rest of the files,
     # append to the DataFrame.
@@ -96,7 +126,8 @@ def read_table(filename, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     # Turn values in categorical_unknown in any categorical_var into NaNs
     for col in categorical_var:
-        df[col] = df[col].replace(categorical_unknown, [np.NaN, np.NaN, np.NaN])
+        df[col] = df[col].replace(categorical_unknown,
+                                  [np.NaN, np.NaN, np.NaN])
 
     # Reformat yyyy-mm-dd variables to pandas timestamps
     for col in time_var:
@@ -125,7 +156,7 @@ def get_enrollment(dedup_early=False):
     if dedup_early:
         metadata['ignore_in_dedup'] = IGNORE_IN_DEDUP + ['DisablingCondition']
         df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
-                    years=None, **metadata)
+                        years=None, **metadata)
         print(df.shape)
         # Now, group by HouseholdID, and only keep the groups where there are
         # more than one ProjectEntryID.
@@ -139,11 +170,12 @@ def get_enrollment(dedup_early=False):
         print(families.shape)
     else:
         df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
-                    years=None, **metadata)
+                        years=None, **metadata)
         print(df.shape)
         # Now, group by HouseholdID, and only keep the groups where there are
         # more than one ProjectEntryID.
-        # The new dataframe should represent families (as opposed to single people).
+        # The new dataframe should represent families
+        # (as opposed to single people).
         gb = df.groupby('HouseholdID')
         more_than_one = lambda x: (len(x['ProjectEntryID']) > 1)
         families = gb.filter(more_than_one)
