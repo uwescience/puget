@@ -7,7 +7,6 @@ import numpy as np
 import tempfile
 from nose import with_setup
 
-DATA_PATH = op.join(puget.__path__[0], 'data', 'king')
 TF = tempfile.NamedTemporaryFile()
 
 def setup():
@@ -33,3 +32,9 @@ def test_read_table():
                             coerce=True),'ig_dedup1':[5,6], 'categ1':[0,np.nan],
                             'years':[2011,2011]})
     pdt.assert_frame_equal(df, df_test)
+
+def test_read_enrollment():
+    df_hard = pk.get_enrollment(False)
+    df_new = pk.get_enrollment(True)
+
+    pdt.assert_frame_equal(df_hard, df_new)
