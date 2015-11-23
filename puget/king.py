@@ -29,6 +29,10 @@ King County data is provided in the following format:
 import pandas as pd
 import os.path as op
 import numpy as np
+import json
+
+from data import DATA_PATH
+KING_DATA = op.join(DATA_PATH, 'king')
 
 #  Paths of csvs
 FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
@@ -129,3 +133,65 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
     for col in time_var:
         df[col] = pd.to_datetime(df[col], coerce=True)
     return df
+
+
+def get_enrollment(dedup_early=False):
+    ''' Reads in the Enrollment tables from King, and returns only rows that
+        are families, with some minor clean-up that includes dropping unusable
+        columns, and second de-deplication.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        dataframe with only rows of enrollments of multiple people from King's
+        Enrollment
+    '''
+    metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
+    metadata_handle = open(metadata_file)
+    metadata = json.loads(metadata_handle.read())
+    _ = metadata.pop('name')
+    if dedup_early:
+        metadata['ignore_in_dedup'] = IGNORE_IN_DEDUP + ['DisablingCondition']
+        df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
+                        years=None, **metadata)
+        print(df.shape)
+        # Now, group by HouseholdID, and only keep the groups where there are
+        # more than one ProjectEntryID.
+        # The new dataframe should represent families
+        # (as opposed to single people).
+        gb = df.groupby('HouseholdID')
+        more_than_one = lambda x: (len(x['ProjectEntryID']) > 1)
+        families = gb.filter(more_than_one)
+        print(families.shape)
+        families = families.sort(columns='DisablingCondition')
+        print(families.shape)
+    else:
+        df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
+                        years=None, **metadata)
+        print(df.shape)
+        # Now, group by HouseholdID, and only keep the groups where there are
+        # more than one ProjectEntryID.
+        # The new dataframe should represent families
+        # (as opposed to single people).
+        gb = df.groupby('HouseholdID')
+        more_than_one = lambda x: (len(x['ProjectEntryID']) > 1)
+        families = gb.filter(more_than_one)
+        print(families.shape)
+        # After a general de-duplication in get_king_table, there are still
+        # duplicate rows of the same ProjectEntryID
+        # due to minor data collection discrepancies in the column
+        # Disabling Condition.
+        columns_to_exclude=['DisablingCondition']
+        duplicate_check_columns = []
+        for col in families.columns:
+            if col not in columns_to_exclude:
+                duplicate_check_columns.append(col)
+        families = families.sort(columns='DisablingCondition')
+        print(families.shape)
+        families = families.drop_duplicates(duplicate_check_columns,
+                   take_last=False, inplace=False)
+        print(families.shape)
+    return families
