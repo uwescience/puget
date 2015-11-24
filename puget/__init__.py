@@ -1,3 +1,4 @@
+"""Init file for puget."""
 import king
 import pierce
 import snohomish
