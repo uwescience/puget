@@ -1,3 +1,4 @@
+"""Version definition for puget."""
 from os.path import join as pjoin
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
@@ -5,7 +6,7 @@ _version_major = 0
 _version_minor = 1
 _version_micro = ''  # use '' for first of series, number for 1 and above
 _version_extra = 'dev'
-#_version_extra = ''  # Uncomment this for full releases
+# _version_extra = ''  # Uncomment this for full releases
 
 # Construct full version string from these.
 _ver = [_version_major, _version_minor]
@@ -31,7 +32,8 @@ long_description = """
 Puget
 ========
 Puget
-To get started using these components in your own software, please go to the repository README_.
+To get started using these components in your own software, please go to the
+repository README_.
 .. _README: https://github.com/uwescience/shablona/blob/master/README.md
 License
 =======
@@ -39,7 +41,8 @@ License
 "LICENSE" for information on the history of this software, terms & conditions
 for usage, and a DISCLAIMER OF ALL WARRANTIES.
 All trademarks referenced herein are property of their respective holders.
-Copyright (c) 2015--, Ariel Rokem, The University of Washington eScience Institute.
+Copyright (c) 2015--, Ariel Rokem, The University of Washington eScience
+Institute.
 """
 
 NAME = "puget"
