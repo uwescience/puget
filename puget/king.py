@@ -113,7 +113,7 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
     if duplicate_check_columns is None:
         print('Warning: duplicate_check_columns is None, no deduplication')
     else:
-        df = df.drop_duplicates(duplicate_check_columns, take_last=True,
+        df = df.drop_duplicates(duplicate_check_columns, keep='last',
                                 inplace=False)
 
     # Turn values in categorical_unknown in any categorical_var into NaNs
@@ -123,7 +123,7 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
 
     # Reformat yyyy-mm-dd variables to pandas timestamps
     for col in time_var:
-        df[col] = pd.to_datetime(df[col], coerce=True)
+        df[col] = pd.to_datetime(df[col], errors='coerce')
     return df
 
 def get_metadata_dict(metadata_file):
@@ -166,6 +166,6 @@ def get_enrollment(groups=True, filename = 'Enrollment.csv',
         def more_than_one(x): return (x.shape[0] > 1)
         df = gb.filter(more_than_one)
 
-    df = df.sort(columns=groupID_column)
+    df = df.sort_values(by=groupID_column)
 
     return df

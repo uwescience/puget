@@ -52,7 +52,7 @@ class TestFunctions(object):
         df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 3],'id':[1,1,2], 'time1':
                                 pd.to_datetime(['2001-01-13', '2004-05-21',
                                                 '2003-06-10'],
-                                coerce=True), 'ig_dedup1': [5, 6, 8],
+                                errors='coerce'), 'ig_dedup1': [5, 6, 8],
                                 'categ1': [0, np.nan, 0],
                                 'years': [2011, 2011, 2011]})
         # Have to change the index to match the one we de-duplicated
@@ -64,6 +64,30 @@ class TestFunctions(object):
         path, fname = op.split(self.TF.name)
         path0, path1 = op.split(path)
         path_dict = {2011: path1}
+        # first try with groups=True (default)
         df = pk.get_enrollment(filename = fname, data_dir = path0, years=2011,
                                paths=path_dict, metadata_file = self.TF2.name,
                                groupID_column='id')
+
+        df_test = pd.DataFrame({'Unnamed: 0': [0, 1],'id':[1,1], 'time1':
+                                pd.to_datetime(['2001-01-13', '2004-05-21'],
+                                errors='coerce'), 'ig_dedup1': [5, 6],
+                                'categ1': [0, np.nan],
+                                'years': [2011, 2011]})
+        pdt.assert_frame_equal(df, df_test)
+
+        # try again with groups=False
+        df = pk.get_enrollment(groups=False, filename = fname, data_dir = path0,
+                               years=2011, paths=path_dict,
+                               metadata_file = self.TF2.name,
+                               groupID_column='id')
+
+        df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 3],'id':[1,1,2], 'time1':
+                                pd.to_datetime(['2001-01-13', '2004-05-21',
+                                                '2003-06-10'],
+                                errors='coerce'), 'ig_dedup1': [5, 6, 8],
+                                'categ1': [0, np.nan, 0],
+                                'years': [2011, 2011, 2011]})
+        # Have to change the index to match the one we de-duplicated
+        df_test.index=pd.Int64Index([0,1,3])
+        pdt.assert_frame_equal(df, df_test)
