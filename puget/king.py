@@ -41,6 +41,7 @@ FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
+
 def read_table(filename, data_dir, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
@@ -126,12 +127,15 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
         df[col] = pd.to_datetime(df[col], errors='coerce')
     return df
 
+
 def get_metadata_dict(metadata_file):
+    """Little function to read a JSON metadata file into a dict."""
     metadata_handle = open(metadata_file)
     metadata = json.loads(metadata_handle.read())
     return metadata
 
-def get_enrollment(groups=True, filename = 'Enrollment.csv',
+
+def get_enrollment(groups=True, filename='Enrollment.csv',
                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
                    metadata_file=None, groupID_column='HouseholdID'):
     """
@@ -149,7 +153,7 @@ def get_enrollment(groups=True, filename = 'Enrollment.csv',
     ----------
     dataframe with cleaned up rows of enrollments from King's Enrollment file
     """
-    if metadata_file is None :
+    if metadata_file is None:
         metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
     metadata = get_metadata_dict(metadata_file)
     _ = metadata.pop('name')
@@ -163,6 +167,7 @@ def get_enrollment(groups=True, filename = 'Enrollment.csv',
 
     if groups:
         gb = df.groupby(groupID_column)
+
         def more_than_one(x): return (x.shape[0] > 1)
         df = gb.filter(more_than_one)
 
