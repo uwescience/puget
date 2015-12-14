@@ -1,5 +1,7 @@
 {
 "name":"enrollment",
+"duplicate_check_columns":["ProjectEntryID", "PersonalID",
+                           "ProjectID", "HouseholdID"],
 "columns_to_drop":["OtherResidencePrior", "StatusDocumented", "HousingStatus",
                    "DateOfEngagement", "InPermanentHousing",
                    "ResidentialMoveInDate", "DateOfPATHStatus",

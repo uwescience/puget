@@ -38,19 +38,14 @@ KING_DATA = op.join(DATA_PATH, 'king')
 FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
              2013: '2013_CSV_4_6-2-15', 2014: '2014_CSV_4_6-1-15'}
 
-#  Columns to not consider when checking for duplicate rows.
-IGNORE_IN_DEDUP = ['DateCreated', 'DateUpdated', 'UserID', 'DateDeleted',
-                   'ExportID', 'CSV_directory']
-
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
 
 def read_table(filename, data_dir, paths=FILEPATHS, years=None,
-               ignore_in_dedup=IGNORE_IN_DEDUP,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
-               time_var=None):
+               time_var=None, duplicate_check_columns=None):
     """
     Read in any .csv table from multiple years in the King data.
 
@@ -113,16 +108,14 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
         this_df['years'] = years[i]
         df = df.append(this_df)
 
-    # Drop duplicate rows, ignoring the columns in ignore_in_dedup.
-    duplicate_check_columns = []
-    for col in df.columns:
-        if col not in ignore_in_dedup:
-            duplicate_check_columns.append(col)
-    df = df.drop_duplicates(duplicate_check_columns, take_last=True,
-                            inplace=False)
-
     # Drop unnecessary columns
     df = df.drop(columns_to_drop, axis=1)
+
+    if duplicate_check_columns is None:
+        print('Warning: duplicate_check_columns is None, no deduplication')
+    else:
+        df = df.drop_duplicates(duplicate_check_columns, keep='last',
+                                inplace=False)
 
     # Turn values in categorical_unknown in any categorical_var into NaNs
     for col in categorical_var:
@@ -131,71 +124,53 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
 
     # Reformat yyyy-mm-dd variables to pandas timestamps
     for col in time_var:
-        df[col] = pd.to_datetime(df[col], coerce=True)
+        df[col] = pd.to_datetime(df[col], errors='coerce')
     return df
 
 
-def get_enrollment(dedup_early=False):
+def get_metadata_dict(metadata_file):
+    """Little function to read a JSON metadata file into a dict."""
+    metadata_handle = open(metadata_file)
+    metadata = json.loads(metadata_handle.read())
+    return metadata
+
+
+def get_enrollment(groups=True, filename='Enrollment.csv',
+                   data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                   metadata_file=None, groupID_column='HouseholdID'):
     """
     Read in the Enrollment tables from King.
 
-    Return only rows that are families, with some minor clean-up that
-    includes dropping unusable columns, and second de-deplication.
+    Return rows with some minor clean-up that
+    includes dropping unusable columns de-deplication.
 
     Parameters
     ----------
-    None
+    groups : boolean
+        If true, only return rows for groups (>1 person)
 
     Returns
     ----------
-    dataframe with only rows of enrollments of multiple people from King's
-    Enrollment
+    dataframe with cleaned up rows of enrollments from King's Enrollment file
     """
-    metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
-    metadata_handle = open(metadata_file)
-    metadata = json.loads(metadata_handle.read())
+    if metadata_file is None:
+        metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
+    metadata = get_metadata_dict(metadata_file)
     _ = metadata.pop('name')
-    if dedup_early:
-        metadata['ignore_in_dedup'] = IGNORE_IN_DEDUP + ['DisablingCondition']
-        df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
-                        years=None, **metadata)
-        print(df.shape)
-        # Now, group by HouseholdID, and only keep the groups where there are
-        # more than one ProjectEntryID.
-        # The new dataframe should represent families
-        # (as opposed to single people).
-        gb = df.groupby('HouseholdID')
+    df = read_table(filename, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+    print(df.shape)
+    # Now, group by HouseholdID, and only keep the groups where there are
+    # more than one ProjectEntryID.
+    # The new dataframe should represent families
+    # (as opposed to single people).
 
-        def more_than_one(x): return (len(x['ProjectEntryID']) > 1)
-        families = gb.filter(more_than_one)
-        print(families.shape)
-        families = families.sort(columns='DisablingCondition')
-        print(families.shape)
-    else:
-        df = read_table('Enrollment.csv', data_dir=KING_DATA, paths=FILEPATHS,
-                        years=None, **metadata)
-        print(df.shape)
-        # Now, group by HouseholdID, and only keep the groups where there are
-        # more than one ProjectEntryID.
-        # The new dataframe should represent families
-        # (as opposed to single people).
-        gb = df.groupby('HouseholdID')
+    if groups:
+        gb = df.groupby(groupID_column)
 
-        def more_than_one(x): return (len(x['ProjectEntryID']) > 1)
-        families = gb.filter(more_than_one)
-        print(families.shape)
-        # After a general de-duplication in get_king_table, there are still
-        # duplicate rows of the same ProjectEntryID
-        # due to minor data collection discrepancies in the column
-        # Disabling Condition.
-        columns_to_exclude = ['DisablingCondition']
-        duplicate_check_columns = []
-        for col in families.columns:
-            if col not in columns_to_exclude:
-                duplicate_check_columns.append(col)
-        families = families.sort(columns='DisablingCondition')
-        print(families.shape)
-        families = families.drop_duplicates(duplicate_check_columns,
-                                            take_last=False, inplace=False)
-        print(families.shape)
-    return families
+        def more_than_one(x): return (x.shape[0] > 1)
+        df = gb.filter(more_than_one)
+
+    df = df.sort_values(by=groupID_column)
+
+    return df
