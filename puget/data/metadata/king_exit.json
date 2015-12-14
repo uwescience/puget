@@ -1,0 +1,17 @@
+{
+"name":"exit",
+"duplicate_check_columns":["ProjectEntryID"],
+"columns_to_drop":["ExitID","PersonalID", "OtherDestination",
+                   "AssessmentDisposition", "OtherDisposition",
+                   "HousingAssessment", "SubsidyInformation",
+                   "ConnectionWithSOAR", "WrittenAftercarePlan",
+                   "AssistanceMainstreamBenefits", "PermanentHousingPlacement",
+                   "TemporaryShelterPlacement","ExitCounseling",
+                   "FurtherFollowUpServices", "ScheduledFollowUpContacts",
+                   "ResourcePackage", "OtherAftercarePlanOrAction",
+                   "ProjectCompletionStatus", "EarlyExitReason",
+                   "FamilyReunificationAchieved", "DateCreated", "DateUpdated",
+                   "UserID", "DateDeleted", "ExportID", "CSV_directory"],
+"categorical_var":["Destination"],
+"time_var":["ExitDate"]
+}

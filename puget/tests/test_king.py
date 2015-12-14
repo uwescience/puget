@@ -63,7 +63,7 @@ class TestFunctions(object):
         df_test.index = pd.Int64Index([0, 1, 3])
         pdt.assert_frame_equal(df, df_test)
 
-    def test_read_enrollment(self):
+    def test_get_enrollment(self):
         """Test get_enrollment function."""
         path, fname = op.split(self.TF.name)
         path0, path1 = op.split(path)
