@@ -30,6 +30,7 @@ import pandas as pd
 import os.path as op
 import numpy as np
 import json
+import puget.utils as pu
 
 from data import DATA_PATH
 KING_DATA = op.join(DATA_PATH, 'king')
@@ -132,6 +133,7 @@ def get_metadata_dict(metadata_file):
     """Little function to read a JSON metadata file into a dict."""
     metadata_handle = open(metadata_file)
     metadata = json.loads(metadata_handle.read())
+    _ = metadata.pop('name')
     return metadata
 
 
@@ -156,10 +158,8 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     if metadata_file is None:
         metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
     metadata = get_metadata_dict(metadata_file)
-    _ = metadata.pop('name')
     df = read_table(filename, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
-    print(df.shape)
     # Now, group by HouseholdID, and only keep the groups where there are
     # more than one ProjectEntryID.
     # The new dataframe should represent families
@@ -174,3 +174,27 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     df = df.sort_values(by=groupID_column)
 
     return df
+
+
+def get_exit(groups=True, filename='Exit.csv',
+             data_dir=KING_DATA, paths=FILEPATHS, years=None,
+             metadata_file=None, df_destination_colname='Destination'):
+    ''' Reads in the Exit tables from King, and returns with ExitDate
+    converted into datetime, and Destination cleaned.
+    The Destination categorization used by Viztric is merged in as well.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        dataframe with rows representing exit record of a person per project
+    '''
+    if metadata_file is None:
+        metadata_file = op.join(DATA_PATH, 'metadata', 'king_exit.json')
+    metadata = get_metadata_dict(metadata_file)
+    df = read_table(filename, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+
+    df_merge = pu.merge_destination(df, df_destination_colname='Destination')
