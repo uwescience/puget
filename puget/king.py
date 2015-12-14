@@ -151,6 +151,26 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     groups : boolean
         If true, only return rows for groups (>1 person)
 
+    filename : string
+        This should be the filename of the .csv table
+
+    data_dir : string
+        full path to general data folder (usually puget/data)
+
+    paths : list
+        list of directories inside data_dir to look for csv files in
+
+    years : list
+        list of years to include, default is to include all years
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+
+    groupID_column : string
+        column to use for identifying groups within the
+        enrollments (ie households)
+
     Returns
     ----------
     dataframe with cleaned up rows of enrollments from King's Enrollment file
@@ -176,21 +196,37 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     return df
 
 
-def get_exit(groups=True, filename='Exit.csv',
+def get_exit(filename='Exit.csv',
              data_dir=KING_DATA, paths=FILEPATHS, years=None,
              metadata_file=None, df_destination_colname='Destination'):
-    ''' Reads in the Exit tables from King, and returns with ExitDate
-    converted into datetime, and Destination cleaned.
-    The Destination categorization used by Viztric is merged in as well.
+    """
+    Read in the Exit tables from King and map Destinations.
 
-        Parameters
-        ----------
-        None
+    Parameters
+    ----------
+    filename : string
+        This should be the filename of the .csv table
 
-        Returns
-        ----------
-        dataframe with rows representing exit record of a person per project
-    '''
+    data_dir : string
+        full path to general data folder (usually puget/data)
+
+    paths : list
+        list of directories inside data_dir to look for csv files in
+
+    years : list
+        list of years to include, default is to include all years
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+
+    df_destination_colname : string
+        column containing the numeric destination codes
+
+    Returns
+    ----------
+    dataframe with rows representing exit record of a person per project
+    """
     if metadata_file is None:
         metadata_file = op.join(DATA_PATH, 'metadata', 'king_exit.json')
     metadata = get_metadata_dict(metadata_file)
