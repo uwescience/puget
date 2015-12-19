@@ -1,0 +1,22 @@
+{
+"name":"client",
+"duplicate_check_columns":["PersonalID", "AmIndAKNative", "Asian",
+                           "BlackAfAmerican", "NativeHIOtherPacific", "White",
+                           "Ethnicity", "Gender", "VeteranStatus",
+                           "DOB"],
+"columns_to_drop":["RaceNone","DateCreated", "DateUpdated", "UserID",
+                   "DateDeleted", "ExportID", "OtherGender"],
+"categorical_var":["AmIndAKNative", "Asian", "BlackAfAmerican",
+                   "NativeHIOtherPacific", "White", "Ethnicity", "Gender",
+                   "VeteranStatus", "WorldWarII", "KoreanWar",
+                   "VietnamWar","DesertStorm", "AfghanistanOEF", "IraqOIF",
+                   "IraqOND", "OtherTheater", "MilitaryBranch",
+                   "DischargeStatus"],
+"time_var":["DOB", "YearEnteredService", "YearSeparated"],
+"pid_column":["PersonalID"],
+"boolean":["AmIndAKNative", "Asian", "BlackAfAmerican",
+           "NativeHIOtherPacific", "White", "Ethnicity", "VeteranStatus",
+           "WorldWarII", "KoreanWar", "VietnamWar", "DesertStorm",
+           "AfghanistanOEF", "IraqOIF", "IraqOND", "OtherTheater"],
+"numeric_code":[ "Gender", "MilitaryBranch", "DischargeStatus"]
+}
