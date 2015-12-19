@@ -97,3 +97,5 @@ class TestFunctions(object):
         # Have to change the index to match the one we de-duplicated
         df_test.index = pd.Int64Index([0, 1, 3])
         pdt.assert_frame_equal(df, df_test)
+
+# TODO: add test for get_client

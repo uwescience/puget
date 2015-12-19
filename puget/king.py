@@ -27,6 +27,7 @@ King County data is provided in the following format:
 """
 
 import pandas as pd
+import datetime
 import os.path as op
 import numpy as np
 import json
@@ -234,3 +235,133 @@ def get_exit(filename='Exit.csv',
                     years=years, **metadata)
 
     df_merge = pu.merge_destination(df, df_destination_colname='Destination')
+
+    return df
+
+
+def get_client(filename='Client.csv',
+               data_dir=KING_DATA, paths=FILEPATHS, years=None,
+               metadata_file=None, df_destination_colname='Destination'):
+    """
+    Read in the Exit tables from King and map Destinations.
+
+    Parameters
+    ----------
+    filename : string
+        This should be the filename of the .csv table
+
+    data_dir : string
+        full path to general data folder (usually puget/data)
+
+    paths : list
+        list of directories inside data_dir to look for csv files in
+
+    years : list
+        list of years to include, default is to include all years
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+
+    Returns
+    ----------
+    dataframe with rows representing demographic information of a person
+    """
+    if metadata_file is None:
+        metadata_file = op.join(DATA_PATH, 'metadata', 'king_client.json')
+    metadata = get_metadata_dict(metadata_file)
+
+    # Don't want to deduplicate before checking if DOB is sane because the last
+    # entry is taken in deduplication but the first entry indicates how early
+    # they entered the system
+    duplicate_check_columns = metadata.pop('duplicate_check_columns')
+    boolean_cols = metadata.pop('boolean')
+    numeric_cols = metadata.pop('numeric_code')
+    pid_column = metadata.pop('pid_column')
+
+    df = read_table(filename, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+    df = df.set_index(np.arange(df.shape[0]))
+
+    bad_dob = np.logical_or(df.DOB >
+                            pd.to_datetime(df.years.astype(str) +
+                                           "/12/31", format='%Y/%m/%d'),
+                            df.DOB < pd.to_datetime('1900/1/1',
+                                                    format='%Y/%m/%d'))
+    n_bad_dob = np.sum(bad_dob)
+
+    # set any bad DOBs to NaNs. Also set to NaN if the same DOB looks bad in
+    # one year but ok in the other -- ie if the DOB was in the future when it
+    # was first entered it but in the past later
+    gb = df.groupby(pid_column)
+    for pid, group in gb:
+        if np.sum(bad_dob[group.index]) > 0:
+            n_entries = group.shape[0]
+            if n_entries == 1:
+                df.loc[group.index, 'DOB'] = pd.NaT
+            else:
+                if max(group.DOB) == min(group.DOB):
+                    df.loc[group.index, 'DOB'] = pd.NaT
+                else:
+                    df.loc[group[bad_dob].index, 'DOB'] = pd.NaT
+
+    print('Found %d entries with bad DOBs' % n_bad_dob)
+
+    # drop years column -- this is the year associated with the csv file
+    df = df.drop('years', axis=1)
+    # perform deduplication that was skipped in read_table
+    df = df.drop_duplicates(duplicate_check_columns, keep='last',
+                            inplace=False)
+
+    # iterate through people with more than one entry and resolve differences.
+    # Set all rows to the same sensible value
+    gb = df.groupby(pid_column)
+    n_entries = gb.size()
+    for pid, group in gb:
+        if n_entries.loc[pid] > 1:
+            # for differences in time columns, if the difference is less than
+            # a year then take the midpoint, otherwise set to NaN
+            for col in metadata['time_var']:
+                if len(np.unique(group[col])) > 1:
+                    is_valid = ~pd.isnull(group[col])
+                    n_valid = np.sum(is_valid)
+                    if n_valid == 1:
+                        group[col] = group[col][is_valid]
+                    elif n_valid > 1:
+                        t_diff = np.max(group[col]) - np.min(group[col])
+                        if t_diff < datetime.timedelta(365):
+                            new_date = (np.min(group[col]) + t_diff).date()
+                            group[col] = pd.datetime(new_date.year,
+                                                     new_date.month,
+                                                     new_date.day)
+                        else:
+                            group[col] = pd.NaT
+
+            # for differences in boolean columns, if ever true then set to true
+            for col in boolean_cols:
+                if len(np.unique(group[col])) > 1:
+                    is_valid = ~pd.isnull(group[col])
+                    n_valid = np.sum(is_valid)
+                    if n_valid == 1:
+                        group[col] = group[col][is_valid]
+                    elif n_valid > 1:
+                        group[col] = np.max(group[col][is_valid])
+
+            # for differences in numeric type columns, if there are conflicting
+            # valid answers, set to NaN
+            for col in numeric_cols:
+                if len(np.unique(group[col])) > 1:
+                    is_valid = ~pd.isnull(group[col])
+                    n_valid = np.sum(is_valid)
+                    if n_valid == 1:
+                        group[col] = group[col][is_valid]
+                    elif n_valid > 1:
+                        group[col] = np.nan
+
+            # push these changes back into the dataframe
+            df.iloc[np.where(df[pid_column] == pid)[0]] = group
+
+    # Now all rows with the same pid_column are identical, so remove them.
+    df = df.drop_duplicates(pid_column, keep='last', inplace=False)
+
+    return df
