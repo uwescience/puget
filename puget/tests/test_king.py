@@ -16,8 +16,8 @@ class TestFunctions(object):
     @classmethod
     def setup_class(cls):
         """Create temporary file for testing."""
-        cls.TF = tempfile.NamedTemporaryFile()
-        cls.TF2 = tempfile.NamedTemporaryFile()
+        cls.TF = tempfile.NamedTemporaryFile(mode='w')
+        cls.TF2 = tempfile.NamedTemporaryFile(mode='w')
         df = pd.DataFrame({'id': [1, 1, 2, 2],
                            'time1': ['2001-01-13', '2004-05-21', '2003-06-10',
                                      '2003-06-10'],

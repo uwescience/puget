@@ -14,8 +14,8 @@ class TestFunctions(object):
     @classmethod
     def setup_class(cls):
         """Create temporary file for testing."""
-        cls.TF = tempfile.NamedTemporaryFile()
-        cls.TF2 = tempfile.NamedTemporaryFile()
+        cls.TF = tempfile.NamedTemporaryFile(mode='w')
+        cls.TF2 = tempfile.NamedTemporaryFile(mode='w')
         df = pd.DataFrame({'Standard': ['New Standards', 'New Standards',
                                         'New Standards', 'Old Standards'],
                            'DestinationNumeric': [1, 2, 3, 4],
