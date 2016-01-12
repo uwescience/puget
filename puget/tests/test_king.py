@@ -9,11 +9,10 @@ import tempfile
 import json
 from nose import with_setup
 
-
 def test_read_table():
     """Test read_table function."""
     # create temporary csv file
-    temp_csv_file = tempfile.NamedTemporaryFile()
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
     df = pd.DataFrame({'id': [1, 1, 2, 2],
                        'time1': ['2001-01-13', '2004-05-21', '2003-06-10',
                                  '2003-06-10'], 'drop1': [2, 3, 4, 5],
@@ -44,8 +43,8 @@ def test_read_table():
 def test_get_enrollment():
     """Test get_enrollment function."""
     # create temporary csv file & metadata file to read in
-    temp_csv_file = tempfile.NamedTemporaryFile()
-    temp_meta_file = tempfile.NamedTemporaryFile()
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     df = pd.DataFrame({'id': [1, 1, 2, 2],
                        'time1': ['2001-01-13', '2004-05-21', '2003-06-10',
                                  '2003-06-10'], 'drop1': [2, 3, 4, 5],
@@ -101,8 +100,8 @@ def test_get_enrollment():
 def test_get_exit():
     """test get_exit function."""
     # create temporary csv file & metadata file to read in
-    temp_csv_file = tempfile.NamedTemporaryFile()
-    temp_meta_file = tempfile.NamedTemporaryFile()
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     dest_rand_ints = np.random.random_integers(1, 30, 3)
     df_init = pd.DataFrame({'id': [11, 12, 13], 'dest': dest_rand_ints})
     df_init.to_csv(temp_csv_file)

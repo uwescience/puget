@@ -33,7 +33,7 @@ import numpy as np
 import json
 import puget.utils as pu
 
-from data import DATA_PATH
+from puget.data import DATA_PATH
 KING_DATA = op.join(DATA_PATH, 'king')
 
 #  Paths of csvs

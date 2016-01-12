@@ -1,7 +1,7 @@
 import pandas as pd
 import os.path as op
 import numpy as np
-from data import DATA_PATH
+from puget.data import DATA_PATH
 
 METADATA = op.join(DATA_PATH, 'metadata')
 
