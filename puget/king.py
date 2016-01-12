@@ -234,16 +234,16 @@ def get_exit(filename='Exit.csv',
     df = read_table(filename, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
-    df_merge = pu.merge_destination(df, df_destination_colname='Destination')
+    df_merge = pu.merge_destination(df, df_destination_colname=df_destination_colname)
 
-    return df
+    return df_merge
 
 
 def get_client(filename='Client.csv',
                data_dir=KING_DATA, paths=FILEPATHS, years=None,
                metadata_file=None, df_destination_colname='Destination'):
     """
-    Read in the Exit tables from King and map Destinations.
+    Read in the Client tables from King and map Destinations.
 
     Parameters
     ----------
