@@ -132,13 +132,15 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
             raise ValueError('If file_dict is a string, data_dir must be passed')
         file_dict = std_path_setup(file_dict, data_dir=data_dir, paths=paths)
 
+    file_dict_use = file_dict.copy()
+
     # Start by reading the first file into a DataFrame
-    year, fname = file_dict.popitem()
+    year, fname = file_dict_use.popitem()
     df = pd.read_csv(fname, low_memory=False)
     df['years'] = year
 
     # Then, for the rest of the files, append to the DataFrame.
-    for year,fname in file_dict.items():
+    for year,fname in file_dict_use.items():
         this_df = pd.read_csv(fname, low_memory=False)
         this_df['years'] = year
         df = df.append(this_df)

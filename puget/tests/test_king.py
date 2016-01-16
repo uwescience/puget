@@ -58,13 +58,11 @@ def test_get_enrollment():
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    path, fname = op.split(temp_csv_file.name)
-    path0, path1 = op.split(path)
-    path_dict = {2011: path1}
+    file_dict = {2011: temp_csv_file.name}
 
     # first try with groups=True (default)
-    df = pk.get_enrollment(file_dict=fname, data_dir=path0, years=2011,
-                           paths=path_dict, metadata_file=temp_meta_file.name,
+    df = pk.get_enrollment(file_dict=file_dict,
+                           metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
     df_test = pd.DataFrame({'Unnamed: 0': [0, 1], 'id': [1, 1], 'time1':
@@ -75,8 +73,7 @@ def test_get_enrollment():
     pdt.assert_frame_equal(df, df_test)
 
     # try again with groups=False
-    df = pk.get_enrollment(groups=False, file_dict=fname, data_dir=path0,
-                           years=2011, paths=path_dict,
+    df = pk.get_enrollment(groups=False, file_dict=file_dict,
                            metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
@@ -110,12 +107,9 @@ def test_get_exit():
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    path, fname = op.split(temp_csv_file.name)
-    path0, path1 = op.split(path)
-    path_dict = {2011: path1}
+    file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_exit(file_dict=fname, data_dir=path0, years=2011,
-                     paths=path_dict, metadata_file=temp_meta_file.name,
+    df = pk.get_exit(file_dict=file_dict, metadata_file=temp_meta_file.name,
                      df_destination_colname='dest')
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
@@ -196,7 +190,7 @@ def test_get_client():
     temp_meta_file.seek(0)
 
     # get path & filenames
-    df = pk.get_client(file_dict, years=years,
+    df = pk.get_client(file_dict=file_dict, years=years,
                        metadata_file=temp_meta_file.name,
                        dob_colname='dob_col')
 
