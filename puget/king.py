@@ -241,7 +241,7 @@ def get_exit(filename='Exit.csv',
 
 def get_client(filename='Client.csv',
                data_dir=KING_DATA, paths=FILEPATHS, years=None,
-               metadata_file=None, df_destination_colname='Destination'):
+               metadata_file=None, dob_colname='DOB'):
     """
     Read in the Client tables from King and map Destinations.
 
@@ -263,6 +263,9 @@ def get_client(filename='Client.csv',
         name of json metadata file with lists of columns to use for
         deduplication, columns to drop, categorical and time-like columns
 
+    dob_colname: string
+        name of column containing the client date of birth
+
     Returns
     ----------
     dataframe with rows representing demographic information of a person
@@ -283,10 +286,10 @@ def get_client(filename='Client.csv',
                     years=years, **metadata)
     df = df.set_index(np.arange(df.shape[0]))
 
-    bad_dob = np.logical_or(df.DOB >
+    bad_dob = np.logical_or(df[dob_colname] >
                             pd.to_datetime(df.years.astype(str) +
                                            "/12/31", format='%Y/%m/%d'),
-                            df.DOB < pd.to_datetime('1900/1/1',
+                            df[dob_colname] < pd.to_datetime('1900/1/1',
                                                     format='%Y/%m/%d'))
     n_bad_dob = np.sum(bad_dob)
 
@@ -298,12 +301,12 @@ def get_client(filename='Client.csv',
         if np.sum(bad_dob[group.index]) > 0:
             n_entries = group.shape[0]
             if n_entries == 1:
-                df.loc[group.index, 'DOB'] = pd.NaT
+                df.loc[group.index, dob_colname] = pd.NaT
             else:
-                if max(group.DOB) == min(group.DOB):
-                    df.loc[group.index, 'DOB'] = pd.NaT
+                if max(group[dob_colname]) == min(group[dob_colname]):
+                    df.loc[group.index, dob_colname] = pd.NaT
                 else:
-                    df.loc[group[bad_dob].index, 'DOB'] = pd.NaT
+                    df.loc[group[bad_dob].index, dob_colname] = pd.NaT
 
     print('Found %d entries with bad DOBs' % n_bad_dob)
 

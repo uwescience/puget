@@ -9,6 +9,7 @@ import tempfile
 import json
 from nose import with_setup
 
+
 def test_read_table():
     """Test read_table function."""
     # create temporary csv file
