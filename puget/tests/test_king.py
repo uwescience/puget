@@ -21,12 +21,9 @@ def test_read_table():
     df.to_csv(temp_csv_file)
     temp_csv_file.seek(0)
 
-    path, fname = op.split(temp_csv_file.name)
-    path0, path1 = op.split(path)
-    path_dict = {2011: path1}
-    df = pk.read_table(fname, path0, years=2011, paths=path_dict,
-                       columns_to_drop=['drop1'], categorical_var=['categ1'],
-                       time_var=['time1'],
+    file_dict = {2011: temp_csv_file.name}
+    df = pk.read_table(file_dict, columns_to_drop=['drop1'],
+                       categorical_var=['categ1'], time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
     df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 3], 'id': [1, 1, 2],
                             'time1':
@@ -66,7 +63,7 @@ def test_get_enrollment():
     path_dict = {2011: path1}
 
     # first try with groups=True (default)
-    df = pk.get_enrollment(filename=fname, data_dir=path0, years=2011,
+    df = pk.get_enrollment(file_dict=fname, data_dir=path0, years=2011,
                            paths=path_dict, metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
@@ -78,7 +75,7 @@ def test_get_enrollment():
     pdt.assert_frame_equal(df, df_test)
 
     # try again with groups=False
-    df = pk.get_enrollment(groups=False, filename=fname, data_dir=path0,
+    df = pk.get_enrollment(groups=False, file_dict=fname, data_dir=path0,
                            years=2011, paths=path_dict,
                            metadata_file=temp_meta_file.name,
                            groupID_column='id')
@@ -117,7 +114,7 @@ def test_get_exit():
     path0, path1 = op.split(path)
     path_dict = {2011: path1}
 
-    df = pk.get_exit(filename=fname, data_dir=path0, years=2011,
+    df = pk.get_exit(file_dict=fname, data_dir=path0, years=2011,
                      paths=path_dict, metadata_file=temp_meta_file.name,
                      df_destination_colname='dest')
 
@@ -171,5 +168,45 @@ def test_get_exit():
     temp_csv_file.close()
     temp_meta_file.close()
 
+def test_get_client():
+    # TODO: test more parts of get_client
 
-# TODO: add test for get_client
+    # create temporary csv files & metadata file to read in
+    # need to make a temporary directory because of assumed directory
+    #  structure in read_table
+    temp_csv_file1 = tempfile.NamedTemporaryFile(mode='w')
+    temp_csv_file2 = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'id': [11, 12],
+                            'dob_col': ['1990-01-13', '2012-05-21']})
+    df2_init = pd.DataFrame({'id': [11, 12],
+                             'dob_col': ['1990-01-13', '2012-05-21']})
+    df_init.to_csv(temp_csv_file1)
+    temp_csv_file1.seek(0)
+    df2_init.to_csv(temp_csv_file2)
+    temp_csv_file2.seek(0)
+
+    years = [2011, 2013]
+    file_dict = dict(zip(years, [temp_csv_file1.name, temp_csv_file2.name]))
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
+                'time_var':['dob_col'], 'pid_column':['id']})
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    # get path & filenames
+    df = pk.get_client(file_dict, years=years,
+                       metadata_file=temp_meta_file.name,
+                       dob_colname='dob_col')
+
+    df_test = pd.DataFrame({'Unnamed: 0': [0, 1], 'id': [11, 12],
+                            'dob_col':['1990-01-13', pd.NaT]})
+
+    # Have to change the index to match the one we de-duplicated
+    df_test.index = pd.Int64Index([2, 3])
+    pdt.assert_frame_equal(df, df_test)
+
+    temp_csv_file1.close()
+    temp_csv_file2.close()
+    temp_meta_file.close()

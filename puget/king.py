@@ -44,7 +44,42 @@ FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
 
-def read_table(filename, data_dir, paths=FILEPATHS, years=None,
+def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
+    """
+    Setup filenames for read_table assuming standard data directory structure.
+
+    Parameters
+    ----------
+    filename : string
+        This should be the filename of the .csv table
+
+    data_dir : string
+        full path to general data folder (usually puget/data)
+
+    paths : list
+        list of directories inside data_dir to look for csv files in
+
+    years : list
+        list of years to include, default is to include all years
+
+    Returns
+    ----------
+    dict with key of years, value of filenames for all included years
+    """
+    if years is None:
+        years = paths.keys()
+    if isinstance(years, (int, float)):
+        years = [years]
+
+    path_list = [paths[y] for y in years]
+    file_list = []
+    for path in path_list:
+        file_list.append(op.join(data_dir, path, filename))
+
+    file_dict = dict(zip(years, file_list))
+    return file_dict
+
+def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None):
@@ -53,8 +88,9 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
 
     Parameters
     ----------
-    filename : string
-        This should be the filename of the .csv table
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table
 
     data_dir : string
         full path to general data folder (usually puget/data)
@@ -91,23 +127,20 @@ def read_table(filename, data_dir, paths=FILEPATHS, years=None,
     if time_var is None:
         time_var = []
 
-    if years is None:
-        years = paths.keys()
-    if isinstance(years, (int, float)):
-        years = [years]
-
-    path_list = [paths[y] for y in years]
+    if not isinstance(file_dict, dict):
+        if data_dir is None:
+            raise ValueError('If file_dict is a string, data_dir must be passed')
+        file_dict = std_path_setup(file_dict, data_dir=data_dir, paths=paths)
 
     # Start by reading the first file into a DataFrame
-    df = pd.read_csv(op.join(data_dir, path_list[0], filename),
-                     low_memory=False)
-    df['years'] = years[0]
-    # Then, for the rest of the files,
-    # append to the DataFrame.
-    for i in range(1, len(path_list)):
-        this_df = pd.read_csv(op.join(data_dir, path_list[i], filename),
-                              low_memory=False)
-        this_df['years'] = years[i]
+    year, fname = file_dict.popitem()
+    df = pd.read_csv(fname, low_memory=False)
+    df['years'] = year
+
+    # Then, for the rest of the files, append to the DataFrame.
+    for year,fname in file_dict.items():
+        this_df = pd.read_csv(fname, low_memory=False)
+        this_df['years'] = year
         df = df.append(this_df)
 
     # Drop unnecessary columns
@@ -138,7 +171,7 @@ def get_metadata_dict(metadata_file):
     return metadata
 
 
-def get_enrollment(groups=True, filename='Enrollment.csv',
+def get_enrollment(groups=True, file_dict='Enrollment.csv',
                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
                    metadata_file=None, groupID_column='HouseholdID'):
     """
@@ -152,8 +185,9 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     groups : boolean
         If true, only return rows for groups (>1 person)
 
-    filename : string
-        This should be the filename of the .csv table
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table
 
     data_dir : string
         full path to general data folder (usually puget/data)
@@ -179,7 +213,7 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     if metadata_file is None:
         metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
     metadata = get_metadata_dict(metadata_file)
-    df = read_table(filename, data_dir=data_dir, paths=paths,
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
     # Now, group by HouseholdID, and only keep the groups where there are
     # more than one ProjectEntryID.
@@ -197,7 +231,7 @@ def get_enrollment(groups=True, filename='Enrollment.csv',
     return df
 
 
-def get_exit(filename='Exit.csv',
+def get_exit(file_dict='Exit.csv',
              data_dir=KING_DATA, paths=FILEPATHS, years=None,
              metadata_file=None, df_destination_colname='Destination'):
     """
@@ -205,8 +239,9 @@ def get_exit(filename='Exit.csv',
 
     Parameters
     ----------
-    filename : string
-        This should be the filename of the .csv table
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table
 
     data_dir : string
         full path to general data folder (usually puget/data)
@@ -231,7 +266,7 @@ def get_exit(filename='Exit.csv',
     if metadata_file is None:
         metadata_file = op.join(DATA_PATH, 'metadata', 'king_exit.json')
     metadata = get_metadata_dict(metadata_file)
-    df = read_table(filename, data_dir=data_dir, paths=paths,
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
     df_merge = pu.merge_destination(df, df_destination_colname=df_destination_colname)
@@ -239,7 +274,7 @@ def get_exit(filename='Exit.csv',
     return df_merge
 
 
-def get_client(filename='Client.csv',
+def get_client(file_dict='Client.csv',
                data_dir=KING_DATA, paths=FILEPATHS, years=None,
                metadata_file=None, dob_colname='DOB'):
     """
@@ -247,8 +282,9 @@ def get_client(filename='Client.csv',
 
     Parameters
     ----------
-    filename : string
-        This should be the filename of the .csv table
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table
 
     data_dir : string
         full path to general data folder (usually puget/data)
@@ -278,11 +314,20 @@ def get_client(filename='Client.csv',
     # entry is taken in deduplication but the first entry indicates how early
     # they entered the system
     duplicate_check_columns = metadata.pop('duplicate_check_columns')
-    boolean_cols = metadata.pop('boolean')
-    numeric_cols = metadata.pop('numeric_code')
-    pid_column = metadata.pop('pid_column')
+    if 'boolean' in metadata:
+        boolean_cols = metadata.pop('boolean')
+    else:
+        print('Warning: boolean_cols is None')
+    if 'numeric_code' in metadata:
+        numeric_cols = metadata.pop('numeric_code')
+    else:
+        print('Warning: numeric_cols is None')
+    if 'pid_column' in metadata:
+        pid_column = metadata.pop('pid_column')
+    else:
+        raise ValueError('pid_column entry must be present in metadata file')
 
-    df = read_table(filename, data_dir=data_dir, paths=paths,
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
     df = df.set_index(np.arange(df.shape[0]))
 
