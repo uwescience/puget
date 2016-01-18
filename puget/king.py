@@ -79,6 +79,7 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
     file_dict = dict(zip(years, file_list))
     return file_dict
 
+
 def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
@@ -129,7 +130,8 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
 
     if not isinstance(file_dict, dict):
         if data_dir is None:
-            raise ValueError('If file_dict is a string, data_dir must be passed')
+            raise ValueError(
+                'If file_dict is a string, data_dir must be passed')
         file_dict = std_path_setup(file_dict, data_dir=data_dir, paths=paths)
 
     file_dict_use = file_dict.copy()
@@ -140,7 +142,7 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
     df['years'] = year
 
     # Then, for the rest of the files, append to the DataFrame.
-    for year,fname in file_dict_use.items():
+    for year, fname in file_dict_use.items():
         this_df = pd.read_csv(fname, low_memory=False)
         this_df['years'] = year
         df = df.append(this_df)
@@ -271,7 +273,8 @@ def get_exit(file_dict='Exit.csv',
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
-    df_merge = pu.merge_destination(df, df_destination_colname=df_destination_colname)
+    df_merge = pu.merge_destination(
+        df, df_destination_colname=df_destination_colname)
 
     return df_merge
 
@@ -336,8 +339,8 @@ def get_client(file_dict='Client.csv',
     bad_dob = np.logical_or(df[dob_colname] >
                             pd.to_datetime(df.years.astype(str) +
                                            "/12/31", format='%Y/%m/%d'),
-                            df[dob_colname] < pd.to_datetime('1900/1/1',
-                                                    format='%Y/%m/%d'))
+                            df[dob_colname] < pd.to_datetime(
+                                '1900/1/1', format='%Y/%m/%d'))
     n_bad_dob = np.sum(bad_dob)
 
     # set any bad DOBs to NaNs. Also set to NaN if the same DOB looks bad in

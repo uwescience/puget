@@ -117,7 +117,8 @@ def test_get_exit():
 
     map_table_test_ints = [2, 25, 26]
     map_table_test = pd.DataFrame({'Standard': np.array(['New Standards']*3),
-                                   'DestinationNumeric': np.array(map_table_test_ints).astype(float),
+                                   'DestinationNumeric': np.array(
+                                        map_table_test_ints).astype(float),
                                    'DestinationDescription': ['Transitional housing for homeless persons (including homeless youth)',
                                                               'Long-term care facility or nursing home',
                                                               'Moved from one HOPWA funded project to HOPWA PH'],
@@ -162,6 +163,7 @@ def test_get_exit():
     temp_csv_file.close()
     temp_meta_file.close()
 
+
 def test_get_client():
     # TODO: test more parts of get_client
 
@@ -184,7 +186,7 @@ def test_get_client():
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
-                'time_var':['dob_col'], 'pid_column':['id']})
+                 'time_var': ['dob_col'], 'pid_column': ['id']})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -195,7 +197,7 @@ def test_get_client():
                        dob_colname='dob_col')
 
     df_test = pd.DataFrame({'Unnamed: 0': [0, 1], 'id': [11, 12],
-                            'dob_col':['1990-01-13', pd.NaT]})
+                            'dob_col': ['1990-01-13', pd.NaT]})
 
     # Have to change the index to match the one we de-duplicated
     df_test.index = pd.Int64Index([2, 3])
