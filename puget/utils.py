@@ -58,3 +58,15 @@ def merge_destination(df, df_destination_colname='destination_value',
     output_df = output_df.drop(df_destination_colname, axis=1)
 
     return output_df
+
+
+def update_progress(progress):
+    """Progress bar in the console.
+    Inspired by
+    http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    Parameters
+    -----------
+    progress : a value (float or int) between 0 and 100 indicating
+               percentage progress
+    """
+    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress))
