@@ -19,14 +19,12 @@ def make_mapping(unique_individuals):
     Create a mapping between a set of unique indivdual id's and indices into
     co-occurence and distance matrices.
     """
-    mapping = OrderedDict(zip(unique_individuals,
-                          np.arange(unique_individuals.shape[0])))
-    inv_mapping = OrderedDict((value, key)
-                              for key, value in mapping.items())
-    return mapping, inv_mapping
+    mapping = dict(zip(unique_individuals,
+                       np.arange(unique_individuals.shape[0])))
 
+    return mapping
 
-def groups_co_occurence(df, group_var, individual_var, T=None,
+def groups_co_occurence(df, individual_var, group_var, T=None,
                         mapping=None):
     """
     Count the co-occurence of individuals in a group.
@@ -46,9 +44,9 @@ def groups_co_occurence(df, group_var, individual_var, T=None,
         T = np.zeros((unique_individuals.shape[0],
                       unique_individuals.shape[0]))
     if mapping is None:
-        mapping, inv_mapping = make_mapping(unique_individuals)
+        mapping = make_mapping(unique_individuals)
     else:
-        mapping, inv_mapping = mapping
+        mapping = mapping
 
     gb = df.groupby(group_var)
     for gid, group in gb:
@@ -64,7 +62,7 @@ def groups_co_occurence(df, group_var, individual_var, T=None,
     return T
 
 
-def time_co_occurence(df, time_var, individual_var, T=None,
+def time_co_occurence(df, individual_var, time_var, T=None,
                       mapping=None):
     """
     Group by co-occurence of the times of enrollment.
@@ -93,27 +91,36 @@ def linkage_matrix(T, method='complete'):
     return Z
 
 
-def cluster(df, group_var, individual_var):
+def cluster(df, individual_var, group_var=None, time_var=None):
     """
     Calculate clusters from a co-occurence matrix
 
     Parameters
     ----------
     df : DataFrame
-
+    individual_var : string
+        A variable that identifies individuals
+    group_var : string
+        A variable to cluster on group co-occurence
+    time_var : string
+        A variable to cluster on temporal co-occurence
     """
     # Filter to non-null client_key and non-null group_key
     df = df[pd.notnull(df[individual_var])]
-    df = df[pd.notnull(df[group_var])]
+
+    if group_var is not None:
+        df = df[pd.notnull(df[group_var])]
 
     unique_individuals = df[individual_var].unique()
 
     T = np.zeros((unique_individuals.shape[0],
                   unique_individuals.shape[0]))
 
-    mapping, inv_mapping = make_mapping(unique_individuals)
-    T = groups_co_occurence(df, group_var, individual_var, T=T,
-                            mapping=[mapping, inv_mapping])
+    mapping = make_mapping(unique_individuals)
+
+    if group_var is not None:
+        T = groups_co_occurence(df, individual_var, group_var, T=T,
+                                mapping=mapping)
 
     Z = linkage_matrix(T)
     clusters = fcluster(Z, t=1.01)
