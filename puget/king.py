@@ -32,6 +32,7 @@ import os.path as op
 import numpy as np
 import json
 import puget.utils as pu
+import warnings
 
 from puget.data import DATA_PATH
 KING_DATA = op.join(DATA_PATH, 'king')
@@ -83,7 +84,7 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
 def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
-               time_var=None, duplicate_check_columns=None):
+               time_var=None, duplicate_check_columns=None, dedup=True):
     """
     Read in any .csv table from multiple years in the King data.
 
@@ -106,20 +107,28 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
         list of years to include, default is to include all years;
             not required if file_dict is a dictionary
 
-    ignore_in_dedup : list
-        Generally, duplicate rows may happen when the same record is
-        registered across the .csv files for each year.
-
     columns_to_drop : list
         A list of of columns to drop. The default is None.
 
     categorical_var : list
-        A list of categorical (including binary) variables whose values
-        8, 9, 99 should be recoded to NaNs.
+        A list of categorical (including binary) variables where values
+        listed in categorical_unknown should be recorded as NaNs
+
+    categorical_unknown: list
+        values that should be recorded as NaNs for categorical variables
+        typically: 8, 9, 99
 
     time_var : list
         A list of time (variables) in yyyy-mm-dd format that are
         reformatted into pandas timestamps. Default is None.
+
+    duplicate_check_columns : list
+        list of columns to conside in deduplication.
+          Generally, duplicate rows may happen when the same record is
+          registered across the .csv files for each year.
+
+    dedup: boolean
+        flag to turn on/off deduplication. Defaults to True
 
     Returns
     ----------
@@ -154,11 +163,13 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
     # Drop unnecessary columns
     df = df.drop(columns_to_drop, axis=1)
 
-    if duplicate_check_columns is None:
-        print('Warning: duplicate_check_columns is None, no deduplication')
-    else:
-        df = df.drop_duplicates(duplicate_check_columns, keep='last',
-                                inplace=False)
+    if dedup:
+        if duplicate_check_columns is None:
+            warnings.warn('dedup is True but duplicate_check_columns is ' +
+                          'None, no deduplication')
+        else:
+            df = df.drop_duplicates(duplicate_check_columns, keep='last',
+                                    inplace=False)
 
     # Turn values in categorical_unknown in any categorical_var into NaNs
     for col in categorical_var:
@@ -339,19 +350,19 @@ def get_client(file_dict='Client.csv',
         boolean_cols = metadata.pop('boolean')
     else:
         boolean_cols = []
-        print('Warning: boolean_cols is None')
+        warnings.warn('boolean_cols is None')
     if 'numeric_code' in metadata:
         numeric_cols = metadata.pop('numeric_code')
     else:
         numeric_cols = []
-        print('Warning: numeric_cols is None')
+        warnings.warn('numeric_cols is None')
     if 'pid_column' in metadata:
         pid_column = metadata.pop('pid_column')
     else:
         raise ValueError('pid_column entry must be present in metadata file')
 
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+                    years=years, **metadata, dedup=False)
     df = df.set_index(np.arange(df.shape[0]))
 
     bad_dob = np.logical_or(df[dob_colname] >
