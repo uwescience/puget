@@ -143,7 +143,8 @@ def linkage_matrix(T):
     return Z
 
 
-def cluster(df, individual_var, group_var=None, time_var=None):
+def cluster(df, individual_var, group_var=None, time_var=None, time_unit='ns',
+            time_delta=0):
     """
     Calculate clusters from a co-occurrence matrix
 
@@ -156,6 +157,9 @@ def cluster(df, individual_var, group_var=None, time_var=None):
         A variable to cluster on group co-occurrence
     time_var : string
         A variable to cluster on temporal co-occurrence
+    time_unit : string
+    time_delta : float or int
+
     """
     # Filter to non-null client_key and non-null group_key
     df = df[pd.notnull(df[individual_var])]
@@ -174,6 +178,11 @@ def cluster(df, individual_var, group_var=None, time_var=None):
         T = groups_co_occurrence(df, individual_var, group_var, T=T,
                                  mapping=mapping)
 
+    if time_var is not None:
+        T = time_co_occurrence(df, individual_var, time_var,
+                               time_unit=time_unit,
+                               time_delta=time_delta,
+                               T=T, mapping=mapping)
     Z = linkage_matrix(T)
     clusters = fcluster(Z, t=1.01)
 

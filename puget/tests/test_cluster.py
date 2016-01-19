@@ -54,15 +54,79 @@ def test_cluster_by_groups():
 
 def test_cluster_by_time():
     df1 = pd.DataFrame({'individual_var': [1, 200, 3, 100, 1, 200, 3, 100],
-                        'time_var': pd.to_datetime(['2001-01-13',
-                                                    '2001-01-13',
-                                                    '2003-06-10',
-                                                    '2003-06-10',
-                                                    '2001-01-13',
-                                                    '2001-01-13',
-                                                    '2003-06-10',
-                                                    '2003-06-10'])})
+                        'time_var1': pd.to_datetime(['2001-01-13',
+                                                     '2001-01-13',
+                                                     '2003-06-10',
+                                                     '2003-06-10',
+                                                     '2001-01-13',
+                                                     '2001-01-13',
+                                                     '2003-06-10',
+                                                     '2003-06-10']),
+                        'time_var2': pd.to_datetime(['2001-01-13',
+                                                     '2003-06-10',
+                                                     '2001-01-13',
+                                                     '2003-06-10',
+                                                     '2001-01-13',
+                                                     '2003-06-10',
+                                                     '2001-01-13',
+                                                     '2003-06-10'])})
 
-    T = cluster.time_co_occurrence(df1, 'individual_var', ['time_var'])
+    T = cluster.time_co_occurrence(df1, 'individual_var', ['time_var1'])
     true_T = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     npt.assert_equal(T, true_T)
+
+    # The first test-case usese only one time variable to establish linkage:
+    df1_out = cluster.cluster(df1, 'individual_var', time_var=['time_var1'])
+    true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
+                                                    1, 200, 3, 100],
+                                 'time_var1': pd.to_datetime(['2001-01-13',
+                                                              '2001-01-13',
+                                                              '2003-06-10',
+                                                              '2003-06-10',
+                                                              '2001-01-13',
+                                                              '2001-01-13',
+                                                              '2003-06-10',
+                                                              '2003-06-10']),
+                                'time_var2': pd.to_datetime(['2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10']),
+                                 'cluster': [1, 1, 2, 2, 1, 1, 2, 2]})
+
+    pdt.assert_frame_equal(df1_out.sort_index(axis=1),
+                           true_df1_out.sort_index(axis=1))
+
+    # In the second test-case, all individuals are linked through a crossing
+    # Of the two different time-variables used for clustering:
+    T = cluster.time_co_occurrence(df1, 'individual_var', ['time_var1',
+                                                           'time_var2'])
+
+    true_T = np.array([[0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 0, 1], [0, 1, 1, 0]])
+    npt.assert_equal(T, true_T)
+
+    df1_out = cluster.cluster(df1, 'individual_var', time_var=['time_var1',
+                                                               'time_var2'])
+
+    true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
+                                                    1, 200, 3, 100],
+                                 'time_var1': pd.to_datetime(['2001-01-13',
+                                                              '2001-01-13',
+                                                              '2003-06-10',
+                                                              '2003-06-10',
+                                                              '2001-01-13',
+                                                              '2001-01-13',
+                                                              '2003-06-10',
+                                                              '2003-06-10']),
+                                'time_var2': pd.to_datetime(['2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10',
+                                                             '2001-01-13',
+                                                             '2003-06-10']),
+                                 'cluster': [1, 1, 1, 1, 1, 1, 1, 1]})
