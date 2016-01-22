@@ -110,7 +110,7 @@ def test_get_exit():
     file_dict = {2011: temp_csv_file.name}
 
     df = pk.get_exit(file_dict=file_dict, metadata_file=temp_meta_file.name,
-                     df_destination_colname='dest')
+                     df_destination_column='dest')
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
                                         'destination_mappings.csv'))
@@ -203,7 +203,7 @@ def test_get_client():
     # get path & filenames
     df = pk.get_client(file_dict=file_dict, years=years,
                        metadata_file=temp_meta_file.name,
-                       dob_colname='dob_col')
+                       dob_column='dob_col')
 
     df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 2, 3, 4, 5, 6, 7],
                             'id': [11, 12, 13, 14, 15, 16, 17, 18],
@@ -220,3 +220,7 @@ def test_get_client():
     temp_csv_file1.close()
     temp_csv_file2.close()
     temp_meta_file.close()
+
+
+def test_get_disabilities():
+    
