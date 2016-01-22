@@ -168,14 +168,21 @@ def test_get_client():
     # TODO: test more parts of get_client
 
     # create temporary csv files & metadata file to read in
-    # need to make a temporary directory because of assumed directory
-    #  structure in read_table
     temp_csv_file1 = tempfile.NamedTemporaryFile(mode='w')
     temp_csv_file2 = tempfile.NamedTemporaryFile(mode='w')
-    df_init = pd.DataFrame({'id': [11, 12],
-                            'dob_col': ['1990-01-13', '2012-05-21']})
-    df2_init = pd.DataFrame({'id': [11, 12],
-                             'dob_col': ['1990-01-13', '2012-05-21']})
+    df_init = pd.DataFrame({'id': [11, 12, 13, 15, 16, 17],
+                            'dob_col': ['1990-01-13', '2012-05-21',
+                                        '1850-06-14', '1965-11-22',
+                                        '1948-09-03', '2012-03-18'],
+                            'bool_col': [1, 99, 1, 8, 0, 1],
+                            'numeric': [99, 3, 6, 0, 8, np.NaN]})
+    df2_init = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
+                             'dob_col': ['1990-01-15', '2012-05-21',
+                                         '1850-06-14', '1975-12-08',
+                                         '1967-11-22', pd.NaT, '2010-03-18',
+                                         '2014-04-30'],
+                             'bool_col': [0, 0, 1, 0, 8, 0, np.NaN, 1],
+                             'numeric': [5, 3, 7, 1, 0, 8, 6, 0]})
     df_init.to_csv(temp_csv_file1)
     temp_csv_file1.seek(0)
     df2_init.to_csv(temp_csv_file2)
@@ -186,7 +193,9 @@ def test_get_client():
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
-                 'time_var': ['dob_col'], 'pid_column': ['id']})
+                 'categorical_var': ['bool_col', 'numeric'],
+                 'time_var': ['dob_col'], 'pid_column': ['id'],
+                 'boolean': ['bool_col'], 'numeric_code': ['numeric']})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -196,11 +205,16 @@ def test_get_client():
                        metadata_file=temp_meta_file.name,
                        dob_colname='dob_col')
 
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1], 'id': [11, 12],
-                            'dob_col': ['1990-01-13', pd.NaT]})
+    df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 2, 3, 4, 5, 6, 7],
+                            'id': [11, 12, 13, 14, 15, 16, 17, 18],
+                            'dob_col': ['1990-01-14', pd.NaT, pd.NaT,
+                                        '1975-12-08', pd.NaT, '1948-09-03',
+                                        '2010-03-18', pd.NaT],
+                            'bool_col': [1, 0, 1, 0, np.NaN, 0, 1, 1],
+                            'numeric': [5, 3, np.NaN, 1, 0, np.NaN, 6, 0]})
 
     # Have to change the index to match the one we de-duplicated
-    df_test.index = pd.Int64Index([2, 3])
+    df_test.index = pd.Int64Index([6, 7, 8, 9, 10, 11, 12, 13])
     pdt.assert_frame_equal(df, df_test)
 
     temp_csv_file1.close()

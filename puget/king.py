@@ -32,6 +32,7 @@ import os.path as op
 import numpy as np
 import json
 import puget.utils as pu
+import warnings
 
 from puget.data import DATA_PATH
 KING_DATA = op.join(DATA_PATH, 'king')
@@ -83,7 +84,7 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
 def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
-               time_var=None, duplicate_check_columns=None):
+               time_var=None, duplicate_check_columns=None, dedup=True):
     """
     Read in any .csv table from multiple years in the King data.
 
@@ -91,31 +92,43 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
     ----------
     file_dict : dict or string
         if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
 
     data_dir : string
-        full path to general data folder (usually puget/data)
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
 
     paths : list
-        list of directories inside data_dir to look for csv files in
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
 
     years : list
-        list of years to include, default is to include all years
-
-    ignore_in_dedup : list
-        Generally, duplicate rows may happen when the same record is
-        registered across the .csv files for each year.
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
 
     columns_to_drop : list
         A list of of columns to drop. The default is None.
 
     categorical_var : list
-        A list of categorical (including binary) variables whose values
-        8, 9, 99 should be recoded to NaNs.
+        A list of categorical (including binary) variables where values
+        listed in categorical_unknown should be recorded as NaNs
+
+    categorical_unknown: list
+        values that should be recorded as NaNs for categorical variables
+        typically: 8, 9, 99
 
     time_var : list
         A list of time (variables) in yyyy-mm-dd format that are
         reformatted into pandas timestamps. Default is None.
+
+    duplicate_check_columns : list
+        list of columns to conside in deduplication.
+          Generally, duplicate rows may happen when the same record is
+          registered across the .csv files for each year.
+
+    dedup: boolean
+        flag to turn on/off deduplication. Defaults to True
 
     Returns
     ----------
@@ -150,11 +163,13 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
     # Drop unnecessary columns
     df = df.drop(columns_to_drop, axis=1)
 
-    if duplicate_check_columns is None:
-        print('Warning: duplicate_check_columns is None, no deduplication')
-    else:
-        df = df.drop_duplicates(duplicate_check_columns, keep='last',
-                                inplace=False)
+    if dedup:
+        if duplicate_check_columns is None:
+            warnings.warn('dedup is True but duplicate_check_columns is ' +
+                          'None, no deduplication')
+        else:
+            df = df.drop_duplicates(duplicate_check_columns, keep='last',
+                                    inplace=False)
 
     # Turn values in categorical_unknown in any categorical_var into NaNs
     for col in categorical_var:
@@ -191,16 +206,20 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
 
     file_dict : dict or string
         if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
 
     data_dir : string
-        full path to general data folder (usually puget/data)
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
 
     paths : list
-        list of directories inside data_dir to look for csv files in
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
 
     years : list
-        list of years to include, default is to include all years
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
 
     metadata_file : string
         name of json metadata file with lists of columns to use for
@@ -245,16 +264,20 @@ def get_exit(file_dict='Exit.csv',
     ----------
     file_dict : dict or string
         if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
 
     data_dir : string
-        full path to general data folder (usually puget/data)
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
 
     paths : list
-        list of directories inside data_dir to look for csv files in
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
 
     years : list
-        list of years to include, default is to include all years
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
 
     metadata_file : string
         name of json metadata file with lists of columns to use for
@@ -289,16 +312,20 @@ def get_client(file_dict='Client.csv',
     ----------
     file_dict : dict or string
         if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
 
     data_dir : string
-        full path to general data folder (usually puget/data)
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
 
     paths : list
-        list of directories inside data_dir to look for csv files in
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
 
     years : list
-        list of years to include, default is to include all years
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
 
     metadata_file : string
         name of json metadata file with lists of columns to use for
@@ -322,18 +349,20 @@ def get_client(file_dict='Client.csv',
     if 'boolean' in metadata:
         boolean_cols = metadata.pop('boolean')
     else:
-        print('Warning: boolean_cols is None')
+        boolean_cols = []
+        warnings.warn('boolean_cols is None')
     if 'numeric_code' in metadata:
         numeric_cols = metadata.pop('numeric_code')
     else:
-        print('Warning: numeric_cols is None')
+        numeric_cols = []
+        warnings.warn('numeric_cols is None')
     if 'pid_column' in metadata:
         pid_column = metadata.pop('pid_column')
     else:
         raise ValueError('pid_column entry must be present in metadata file')
 
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+                    years=years, **metadata, dedup=False)
     df = df.set_index(np.arange(df.shape[0]))
 
     bad_dob = np.logical_or(df[dob_colname] >
@@ -356,21 +385,30 @@ def get_client(file_dict='Client.csv',
                 if max(group[dob_colname]) == min(group[dob_colname]):
                     df.loc[group.index, dob_colname] = pd.NaT
                 else:
-                    df.loc[group[bad_dob].index, dob_colname] = pd.NaT
+                    df.loc[group.index[np.where(bad_dob[group.index] == True)],
+                           dob_colname] = pd.NaT
 
     print('Found %d entries with bad DOBs' % n_bad_dob)
 
     # drop years column -- this is the year associated with the csv file
     df = df.drop('years', axis=1)
-    # perform deduplication that was skipped in read_table
-    df = df.drop_duplicates(duplicate_check_columns, keep='last',
-                            inplace=False)
+    # perform partial deduplication that was skipped in read_table,
+    #  but don't deduplicate time_var, boolean or numeric columns until after
+    #  resolving differences
+    mid_dedup_cols = list(set(list(duplicate_check_columns) +
+                              list(metadata['time_var']) +
+                              list(boolean_cols) + list(numeric_cols) +
+                              list(pid_column)))
+    df = df.drop_duplicates(mid_dedup_cols, keep='last', inplace=False)
 
     # iterate through people with more than one entry and resolve differences.
     # Set all rows to the same sensible value
     gb = df.groupby(pid_column)
     n_entries = gb.size()
     for pid, group in gb:
+        # turn off SettingWithCopy warning for this object
+        group.is_copy = False
+
         if n_entries.loc[pid] > 1:
             # for differences in time columns, if the difference is less than
             # a year then take the midpoint, otherwise set to NaN
@@ -379,11 +417,14 @@ def get_client(file_dict='Client.csv',
                     is_valid = ~pd.isnull(group[col])
                     n_valid = np.sum(is_valid)
                     if n_valid == 1:
-                        group[col] = group[col][is_valid]
+                        group[col] = group[col][is_valid].values[0]
                     elif n_valid > 1:
                         t_diff = np.max(group[col]) - np.min(group[col])
                         if t_diff < datetime.timedelta(365):
-                            new_date = (np.min(group[col]) + t_diff).date()
+                            t_diff_sec = t_diff.seconds + 86400 * t_diff.days
+                            new_date = (np.min(group[col]) +
+                                        datetime.timedelta(
+                                            seconds=t_diff_sec / 2.)).date()
                             group[col] = pd.datetime(new_date.year,
                                                      new_date.month,
                                                      new_date.day)
@@ -396,7 +437,7 @@ def get_client(file_dict='Client.csv',
                     is_valid = ~pd.isnull(group[col])
                     n_valid = np.sum(is_valid)
                     if n_valid == 1:
-                        group[col] = group[col][is_valid]
+                        group[col] = group[col][is_valid].values[0]
                     elif n_valid > 1:
                         group[col] = np.max(group[col][is_valid])
 
@@ -407,14 +448,17 @@ def get_client(file_dict='Client.csv',
                     is_valid = ~pd.isnull(group[col])
                     n_valid = np.sum(is_valid)
                     if n_valid == 1:
-                        group[col] = group[col][is_valid]
+                        group[col] = group[col][is_valid].values[0]
                     elif n_valid > 1:
                         group[col] = np.nan
 
             # push these changes back into the dataframe
             df.iloc[np.where(df[pid_column] == pid)[0]] = group
 
-    # Now all rows with the same pid_column are identical, so remove them.
-    df = df.drop_duplicates(pid_column, keep='last', inplace=False)
+    # Now all rows with the same pid_column have identical time_var,
+    # boolean & numeric_col values so we can perform full deduplication
+    # that was skipped in read_table,
+    df = df.drop_duplicates(duplicate_check_columns, keep='last',
+                            inplace=False)
 
     return df
