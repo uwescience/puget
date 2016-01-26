@@ -165,8 +165,6 @@ def test_get_exit():
 
 
 def test_get_client():
-    # TODO: test more parts of get_client
-
     # create temporary csv files & metadata file to read in
     temp_csv_file1 = tempfile.NamedTemporaryFile(mode='w')
     temp_csv_file2 = tempfile.NamedTemporaryFile(mode='w')
@@ -223,4 +221,43 @@ def test_get_client():
 
 
 def test_get_disabilities():
-    
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'pid': [11, 11, 11, 11, 12, 12, 12, 12],
+                            'stage': [10, 10, 20, 20, 10, 10, 20, 20],
+                            'type': [5, 6, 5, 6, 5, 6, 5, 6],
+                            'response': [0, 1, 0, 1, 99, 0, 0, 1]})
+    df_init.to_csv(temp_csv_file)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['pid', 'stage', 'type'],
+                'categorical_var': ['response'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 10,
+                'exit_stage_val': 20, 'type_column': 'type',
+                'response_column': 'response', 'primaryID': 'pid'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_disabilities(file_dict=file_dict,
+                             metadata_file=temp_meta_file.name)
+
+    type_dict = {5: 'Physical', 6: 'Developmental', 7: 'ChronicHealth',
+                 8: 'HIVAIDS', 9: 'MentalHealth', 10: 'SubstanceAbuse'}
+
+    # make sure values are floats
+    df_test = pd.DataFrame({'pid': [11, 12], 'Physical_entry': [0, np.NaN],
+                            'Physical_exit': [0.0, 0.0],
+                            'Developmental_entry': [1.0, 0.0],
+                            'Developmental_exit': [1.0, 1.0]})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)
+
+    temp_csv_file.close()
+    temp_meta_file.close()

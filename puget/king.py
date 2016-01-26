@@ -470,7 +470,9 @@ def get_disabilities(file_dict='Disabilities.csv',
                      disability_type_file=op.join(DATA_PATH, 'metadata',
                                                   'disability_type.json')):
     """
-    Read in the Disabilities tables from King.
+    Read in the Disabilities tables from King, convert sets of disablity type
+    and response rows to columns to reduce to one row per
+    primaryID (ie ProjectEntryID) with a column per disability type
 
     Parameters
     ----------
@@ -511,48 +513,51 @@ def get_disabilities(file_dict='Disabilities.csv',
                       'response_column': None,
                       'primaryID': None}
 
-    for k, v in extra_metadata:
+    for k in extra_metadata:
         if k in metadata:
-            extra_metadata.k = metadata.pop(k)
+            extra_metadata[k] = metadata.pop(k)
         else:
             raise ValueError(k + ' entry must be present in metadata file')
 
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
-    df_entry = df.groupby(collection_stage_column).get_group(
-        extra_metadata.entry_stage_val)
-    df_exit = df.groupby(collection_stage_column).get_group(
-        extra_metadata.exit_stage_val)
+    df_entry = df.groupby(extra_metadata['collection_stage_column']).get_group(
+        extra_metadata['entry_stage_val'])
+    df_exit = df.groupby(extra_metadata['collection_stage_column']).get_group(
+        extra_metadata['exit_stage_val'])
 
     # Use pivot_table, only capturing DisabilityResponse and ProjectEntryID
-    disabilities_entry_wide = disabilities_entry.pivot_table(
-        values=extra_metadata.response_column,
-        index=[extra_metadata.primaryID],
-        columns=extra_metadata.type_column)
-    disabilities_entry_wide.columns = disabilities_entry_wide.columns.tolist()
+    df_entry_wide = df_entry.pivot_table(
+                        values=extra_metadata['response_column'],
+                        index=[extra_metadata['primaryID']],
+                        columns=extra_metadata['type_column'])
+    df_entry_wide.columns = df_entry_wide.columns.tolist()
+    df_entry_wide.insert(0, extra_metadata['primaryID'], df_entry_wide.index)
+#    df_entry_wide[extra_metadata['primaryID']] = df_entry_wide.index
 
-    disabilities_exit_wide = disabilities_entry.pivot_table(
-        values=extra_metadata.response_column,
-        index=[extra_metadata.primaryID],
-        columns=extra_metadata.type_column)
-    disabilities_exit_wide.columns = disabilities_exit_wide.columns.tolist()
+    df_exit_wide = df_exit.pivot_table(
+                        values=extra_metadata['response_column'],
+                        index=[extra_metadata['primaryID']],
+                        columns=extra_metadata['type_column'])
+    df_exit_wide.columns = df_exit_wide.columns.tolist()
+    df_exit_wide.insert(0, extra_metadata['primaryID'], df_exit_wide.index)
+#    df_exit_wide[extra_metadata['primaryID']] = df_exit_wide.index
 
     # Rename columns
     mapping_dict = get_metadata_dict(disability_type_file)
     entry_mapping = {}
     exit_mapping = {}
-    for k, v in mapping_dict:
-        entry_mapping[k] = v + '_entry'
-        exit_mapping[k] = v + '_exit'
+    # add entry or exit tags to column names and turn keys into ints
+    for k, v in mapping_dict.items():
+        entry_mapping[int(k)] = v + '_entry'
+        exit_mapping[int(k)] = v + '_exit'
 
-    disabilities_entry_wide = disabilities_entry_wide.rename(
-        columns=entry_mapping)
-    disabilities_exit_wide = disabilities_exit_wide.rename(
-        columns=exit_mapping)
+    df_entry_wide = df_entry_wide.rename(columns=entry_mapping)
+    df_exit_wide = df_exit_wide.rename(columns=exit_mapping)
 
     # Merge together disabilities_entry and disabilities_exit
-    disabilities_wide = disabilities_entry_wide.merge(
-        disabilities_exit_wide, how='outer', left_index=True, right_index=True)
+    df_wide = pd.merge(df_entry_wide, df_exit_wide,
+                       on=extra_metadata['primaryID'], how='outer')
 
-    return disabilities_wide
+    return df_wide
