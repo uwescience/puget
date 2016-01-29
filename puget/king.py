@@ -192,7 +192,9 @@ def get_metadata_dict(metadata_file):
 
 def get_enrollment(groups=True, file_dict='Enrollment.csv',
                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
-                   metadata_file=None, groupID_column='HouseholdID'):
+                   metadata_file=op.join(DATA_PATH, 'metadata',
+                                         'king_enrollment.json'),
+                   groupID_column='HouseholdID'):
     """
     Read in the Enrollment tables from King.
 
@@ -233,8 +235,6 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
     ----------
     dataframe with cleaned up rows of enrollments from King's Enrollment file
     """
-    if metadata_file is None:
-        metadata_file = op.join(DATA_PATH, 'metadata', 'king_enrollment.json')
     metadata = get_metadata_dict(metadata_file)
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
@@ -256,7 +256,8 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
 
 def get_exit(file_dict='Exit.csv',
              data_dir=KING_DATA, paths=FILEPATHS, years=None,
-             metadata_file=None, df_destination_colname='Destination'):
+             metadata_file=op.join(DATA_PATH, 'metadata', 'king_client.json'),
+             df_destination_column='Destination'):
     """
     Read in the Exit tables from King and map Destinations.
 
@@ -283,7 +284,7 @@ def get_exit(file_dict='Exit.csv',
         name of json metadata file with lists of columns to use for
         deduplication, columns to drop, categorical and time-like columns
 
-    df_destination_colname : string
+    df_destination_column : string
         column containing the numeric destination codes
 
     Returns
@@ -297,14 +298,14 @@ def get_exit(file_dict='Exit.csv',
                     years=years, **metadata)
 
     df_merge = pu.merge_destination(
-        df, df_destination_colname=df_destination_colname)
+        df, df_destination_column=df_destination_column)
 
     return df_merge
 
 
 def get_client(file_dict='Client.csv',
                data_dir=KING_DATA, paths=FILEPATHS, years=None,
-               metadata_file=None, dob_colname='DOB'):
+               metadata_file=None, dob_column='DOB'):
     """
     Read in the Client tables from King and map Destinations.
 
@@ -331,15 +332,13 @@ def get_client(file_dict='Client.csv',
         name of json metadata file with lists of columns to use for
         deduplication, columns to drop, categorical and time-like columns
 
-    dob_colname: string
+    dob_column: string
         name of column containing the client date of birth
 
     Returns
     ----------
     dataframe with rows representing demographic information of a person
     """
-    if metadata_file is None:
-        metadata_file = op.join(DATA_PATH, 'metadata', 'king_client.json')
     metadata = get_metadata_dict(metadata_file)
 
     # Don't want to deduplicate before checking if DOB is sane because the last
@@ -365,10 +364,10 @@ def get_client(file_dict='Client.csv',
                     years=years, **metadata, dedup=False)
     df = df.set_index(np.arange(df.shape[0]))
 
-    bad_dob = np.logical_or(df[dob_colname] >
+    bad_dob = np.logical_or(df[dob_column] >
                             pd.to_datetime(df.years.astype(str) +
                                            "/12/31", format='%Y/%m/%d'),
-                            df[dob_colname] < pd.to_datetime(
+                            df[dob_column] < pd.to_datetime(
                                 '1900/1/1', format='%Y/%m/%d'))
     n_bad_dob = np.sum(bad_dob)
 
@@ -380,13 +379,13 @@ def get_client(file_dict='Client.csv',
         if np.sum(bad_dob[group.index]) > 0:
             n_entries = group.shape[0]
             if n_entries == 1:
-                df.loc[group.index, dob_colname] = pd.NaT
+                df.loc[group.index, dob_column] = pd.NaT
             else:
-                if max(group[dob_colname]) == min(group[dob_colname]):
-                    df.loc[group.index, dob_colname] = pd.NaT
+                if max(group[dob_column]) == min(group[dob_column]):
+                    df.loc[group.index, dob_column] = pd.NaT
                 else:
                     df.loc[group.index[np.where(bad_dob[group.index] == True)],
-                           dob_colname] = pd.NaT
+                           dob_column] = pd.NaT
 
     print('Found %d entries with bad DOBs' % n_bad_dob)
 
@@ -462,3 +461,103 @@ def get_client(file_dict='Client.csv',
                             inplace=False)
 
     return df
+
+
+def get_disabilities(file_dict='Disabilities.csv',
+                     data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                     metadata_file=op.join(DATA_PATH, 'metadata',
+                                           'king_disabilities.json'),
+                     disability_type_file=op.join(DATA_PATH, 'metadata',
+                                                  'disability_type.json')):
+    """
+    Read in the Disabilities tables from King, convert sets of disablity type
+    and response rows to columns to reduce to one row per
+    primaryID (ie ProjectEntryID) with a column per disability type
+
+    Parameters
+    ----------
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
+
+    data_dir : string
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
+
+    paths : list
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
+
+    years : list
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+
+    disability_type_file : string
+        name of json file with mapping between disability numeric codes and
+        string description
+
+    Returns
+    ----------
+    dataframe with rows representing exit record of a person per project
+    """
+    metadata = get_metadata_dict(metadata_file)
+    extra_metadata = {'collection_stage_column': None,
+                      'entry_stage_val': None,
+                      'exit_stage_val': None,
+                      'type_column': None,
+                      'response_column': None,
+                      'primaryID': None}
+
+    for k in extra_metadata:
+        if k in metadata:
+            extra_metadata[k] = metadata.pop(k)
+        else:
+            raise ValueError(k + ' entry must be present in metadata file')
+
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+
+    df_entry = df.groupby(extra_metadata['collection_stage_column']).get_group(
+        extra_metadata['entry_stage_val'])
+    df_exit = df.groupby(extra_metadata['collection_stage_column']).get_group(
+        extra_metadata['exit_stage_val'])
+
+    # Use pivot_table, only capturing DisabilityResponse and ProjectEntryID
+    df_entry_wide = df_entry.pivot_table(
+                        values=extra_metadata['response_column'],
+                        index=[extra_metadata['primaryID']],
+                        columns=extra_metadata['type_column'])
+    df_entry_wide.columns = df_entry_wide.columns.tolist()
+    df_entry_wide.insert(0, extra_metadata['primaryID'], df_entry_wide.index)
+#    df_entry_wide[extra_metadata['primaryID']] = df_entry_wide.index
+
+    df_exit_wide = df_exit.pivot_table(
+                        values=extra_metadata['response_column'],
+                        index=[extra_metadata['primaryID']],
+                        columns=extra_metadata['type_column'])
+    df_exit_wide.columns = df_exit_wide.columns.tolist()
+    df_exit_wide.insert(0, extra_metadata['primaryID'], df_exit_wide.index)
+#    df_exit_wide[extra_metadata['primaryID']] = df_exit_wide.index
+
+    # Rename columns
+    mapping_dict = get_metadata_dict(disability_type_file)
+    entry_mapping = {}
+    exit_mapping = {}
+    # add entry or exit tags to column names and turn keys into ints
+    for k, v in mapping_dict.items():
+        entry_mapping[int(k)] = v + '_entry'
+        exit_mapping[int(k)] = v + '_exit'
+
+    df_entry_wide = df_entry_wide.rename(columns=entry_mapping)
+    df_exit_wide = df_exit_wide.rename(columns=exit_mapping)
+
+    # Merge together disabilities_entry and disabilities_exit
+    df_wide = pd.merge(df_entry_wide, df_exit_wide,
+                       on=extra_metadata['primaryID'], how='outer')
+
+    return df_wide

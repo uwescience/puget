@@ -42,7 +42,7 @@ class TestFunctions(object):
         """Test merge_destination function."""
         path, fname = op.split(self.TF.name)
         df = pd.DataFrame({'numeric': [1, 2, 3]})
-        df_merge = pu.merge_destination(df, df_destination_colname='numeric',
+        df_merge = pu.merge_destination(df, df_destination_column='numeric',
                                         destination_map_fname=fname,
                                         directory=path)
         df_test = pd.DataFrame({'DestinationNumeric': [1, 2, 3],

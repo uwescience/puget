@@ -6,7 +6,7 @@ from puget.data import DATA_PATH
 METADATA = op.join(DATA_PATH, 'metadata')
 
 
-def merge_destination(df, df_destination_colname='destination_value',
+def merge_destination(df, df_destination_column='destination_value',
                       destination_map_fname='destination_mappings.csv',
                       directory=METADATA):
     """
@@ -18,7 +18,7 @@ def merge_destination(df, df_destination_colname='destination_value',
     df: a dataframe with a column that contains the numeric destination
         outcomes
 
-    df_destination_colname: a string - the name of the column that contains the
+    df_destination_column: a string - the name of the column that contains the
         numeric destination outcomes
 
     destination_map_fname: string (optional). The filename containing the
@@ -52,10 +52,10 @@ def merge_destination(df, df_destination_colname='destination_value',
     # Merge the Destination mapping with the df
     # based on the last_destination string
     output_df = pd.merge(left=df, right=mapping_table, how='left',
-                         left_on=df_destination_colname,
+                         left_on=df_destination_column,
                          right_on='DestinationNumeric')
 
-    output_df = output_df.drop(df_destination_colname, axis=1)
+    output_df = output_df.drop(df_destination_column, axis=1)
 
     return output_df
 
