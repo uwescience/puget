@@ -1,0 +1,9 @@
+{
+"name":"Destination",
+"duplicate_check_columns":["EnrollID"],
+"columns_to_drop":["ClientID","FamilyID", "NumberFamilyMembers",
+                   "BirthDateQuality", "Race_AmIndian", "Race_Asian",
+                    "Race_Black", "Race_Hawaiian_PI", "Race_White"]
+
+
+}
