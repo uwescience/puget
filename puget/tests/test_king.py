@@ -7,7 +7,43 @@ import pandas.util.testing as pdt
 import numpy as np
 import tempfile
 import json
-from nose import with_setup
+from nose.tools import assert_equal, assert_raises
+
+
+def test_std_path_setup():
+    filename = 'test'
+    data_dir = 'data'
+    file_paths = {2011: 'test_2011', 2012: 'test_2012', 2013: 'test_2013',
+                  2014: 'test_2014'}
+
+    # test with one year
+    years = 2012
+
+    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+                                  paths=file_paths, years=years)
+    test_dict = {2012: op.join(data_dir, file_paths[2012], filename)}
+
+    assert_equal(file_dict, test_dict)
+
+    # test with limited years
+    years = [2012, 2013]
+
+    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+                                  paths=file_paths, years=years)
+    test_dict = {2012: op.join(data_dir, file_paths[2012], filename),
+                 2013: op.join(data_dir, file_paths[2013], filename)}
+
+    assert_equal(file_dict, test_dict)
+
+    # test with all years
+    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+                                  paths=file_paths)
+    test_dict = {2011: op.join(data_dir, file_paths[2011], filename),
+                 2012: op.join(data_dir, file_paths[2012], filename),
+                 2013: op.join(data_dir, file_paths[2013], filename),
+                 2014: op.join(data_dir, file_paths[2014], filename)}
+
+    assert_equal(file_dict, test_dict)
 
 
 def test_read_table():
@@ -18,14 +54,15 @@ def test_read_table():
                        'time1': ['2001-01-13', '2004-05-21', '2003-06-10',
                                  '2003-06-10'], 'drop1': [2, 3, 4, 5],
                        'ig_dedup1': [5, 6, 7, 8], 'categ1': [0, 8, 0, 0]})
-    df.to_csv(temp_csv_file)
+    df.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     file_dict = {2011: temp_csv_file.name}
     df = pk.read_table(file_dict, columns_to_drop=['drop1'],
                        categorical_var=['categ1'], time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 3], 'id': [1, 1, 2],
+
+    df_test = pd.DataFrame({'id': [1, 1, 2],
                             'time1':
                             pd.to_datetime(['2001-01-13', '2004-05-21',
                                             '2003-06-10'], errors='coerce'),
@@ -38,6 +75,55 @@ def test_read_table():
     temp_csv_file.close()
 
 
+def test_read_entry_exit():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'id': [11, 11, 12],
+                            'stage': [0, 1, 0], 'value': [0, 1, 0]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 0,
+                'exit_stage_val': 1, 'uniqueID': 'id'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_employment_education(file_dict=file_dict,
+                                     metadata_file=temp_meta_file.name)
+
+    # make sure values are floats
+    df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
+                            'value_exit': [1, np.NaN]})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)
+
+    # check error checking
+    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value']}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file2.file.write(metadata_json)
+    temp_meta_file2.seek(0)
+    assert_raises(ValueError, pk.get_employment_education,
+                  file_dict=file_dict, metadata_file=temp_meta_file2.name)
+
+    temp_csv_file.close()
+    temp_meta_file.close()
+    temp_meta_file2.close()
+
+
 def test_get_enrollment():
     """Test get_enrollment function."""
     # create temporary csv file & metadata file to read in
@@ -47,7 +133,7 @@ def test_get_enrollment():
                        'time1': ['2001-01-13', '2004-05-21', '2003-06-10',
                                  '2003-06-10'], 'drop1': [2, 3, 4, 5],
                        'ig_dedup1': [5, 6, 7, 8], 'categ1': [0, 8, 0, 0]})
-    df.to_csv(temp_csv_file)
+    df.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     metadata = ({'name': 'test',
@@ -65,7 +151,7 @@ def test_get_enrollment():
                            metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1], 'id': [1, 1], 'time1':
+    df_test = pd.DataFrame({'id': [1, 1], 'time1':
                             pd.to_datetime(['2001-01-13', '2004-05-21'],
                             errors='coerce'), 'ig_dedup1': [5, 6],
                             'categ1': [0, np.nan],
@@ -77,7 +163,7 @@ def test_get_enrollment():
                            metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 3], 'id': [1, 1, 2],
+    df_test = pd.DataFrame({'id': [1, 1, 2],
                             'time1':
                             pd.to_datetime(['2001-01-13', '2004-05-21',
                                             '2003-06-10'], errors='coerce'),
@@ -99,7 +185,7 @@ def test_get_exit():
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     dest_rand_ints = np.random.random_integers(1, 30, 3)
     df_init = pd.DataFrame({'id': [11, 12, 13], 'dest': dest_rand_ints})
-    df_init.to_csv(temp_csv_file)
+    df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id']})
@@ -151,7 +237,7 @@ def test_get_exit():
     mapping_table = mapping_table.drop(['Standard'], axis=1)
     mapping_table
 
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 2], 'id': [11, 12, 13],
+    df_test = pd.DataFrame({'id': [11, 12, 13],
                             'years': [2011, 2011, 2011],
                             'dest': dest_rand_ints})
     df_test = pd.merge(left=df_test, right=mapping_table, how='left',
@@ -181,9 +267,9 @@ def test_get_client():
                                          '2014-04-30'],
                              'bool_col': [0, 0, 1, 0, 8, 0, np.NaN, 1],
                              'numeric': [5, 3, 7, 1, 0, 8, 6, 0]})
-    df_init.to_csv(temp_csv_file1)
+    df_init.to_csv(temp_csv_file1, index=False)
     temp_csv_file1.seek(0)
-    df2_init.to_csv(temp_csv_file2)
+    df2_init.to_csv(temp_csv_file2, index=False)
     temp_csv_file2.seek(0)
 
     years = [2011, 2013]
@@ -203,8 +289,7 @@ def test_get_client():
                        metadata_file=temp_meta_file.name,
                        dob_column='dob_col')
 
-    df_test = pd.DataFrame({'Unnamed: 0': [0, 1, 2, 3, 4, 5, 6, 7],
-                            'id': [11, 12, 13, 14, 15, 16, 17, 18],
+    df_test = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
                             'dob_col': ['1990-01-14', pd.NaT, pd.NaT,
                                         '1975-12-08', pd.NaT, '1948-09-03',
                                         '2010-03-18', pd.NaT],
@@ -214,6 +299,19 @@ def test_get_client():
     # Have to change the index to match the one we de-duplicated
     df_test.index = pd.Int64Index([6, 7, 8, 9, 10, 11, 12, 13])
     pdt.assert_frame_equal(df, df_test)
+
+    # check error checking
+    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
+    metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
+                 'categorical_var': ['bool_col', 'numeric'],
+                 'time_var': ['dob_col'],
+                 'boolean': ['bool_col'], 'numeric_code': ['numeric']})
+    metadata_json = json.dumps(metadata)
+    temp_meta_file2.file.write(metadata_json)
+    temp_meta_file2.seek(0)
+    assert_raises(ValueError, pk.get_client,
+                  file_dict=file_dict, metadata_file=temp_meta_file2.name,
+                  dob_column='dob_col')
 
     temp_csv_file1.close()
     temp_csv_file2.close()
@@ -226,16 +324,17 @@ def test_get_disabilities():
                             'stage': [10, 10, 20, 20, 10, 10, 20, 20],
                             'type': [5, 6, 5, 6, 5, 6, 5, 6],
                             'response': [0, 1, 0, 1, 99, 0, 0, 1]})
-    df_init.to_csv(temp_csv_file)
+    df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test',
                 'duplicate_check_columns': ['pid', 'stage', 'type'],
+                'columns_to_drop': ['years'],
                 'categorical_var': ['response'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 10,
                 'exit_stage_val': 20, 'type_column': 'type',
-                'response_column': 'response', 'primaryID': 'pid'}
+                'response_column': 'response', 'uniqueID': 'pid'}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -259,5 +358,66 @@ def test_get_disabilities():
     df_test = df_test.sort_index(axis=1)
     pdt.assert_frame_equal(df, df_test)
 
+    # check error checking
+    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['pid', 'stage', 'type'],
+                'categorical_var': ['response']}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file2.file.write(metadata_json)
+    temp_meta_file2.seek(0)
+    assert_raises(ValueError, pk.get_disabilities,
+                  file_dict=file_dict, metadata_file=temp_meta_file2.name)
+
     temp_csv_file.close()
     temp_meta_file.close()
+    temp_meta_file2.close()
+
+
+def test_read_entry_exit():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'id': [11, 11, 12],
+                            'stage': [0, 1, 0], 'value': [0, 1, 0]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 0,
+                'exit_stage_val': 1, 'uniqueID': 'id'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.read_entry_exit_table(file_dict=file_dict,
+                                  metadata=temp_meta_file.name)
+
+    # make sure values are floats
+    df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
+                            'value_exit': [1, np.NaN]})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)
+
+    # check error checking
+    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value']}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file2.file.write(metadata_json)
+    temp_meta_file2.seek(0)
+    assert_raises(ValueError, pk.read_entry_exit_table,
+                  file_dict=file_dict, metadata=temp_meta_file2.name)
+
+    temp_csv_file.close()
+    temp_meta_file.close()
+    temp_meta_file2.close()
