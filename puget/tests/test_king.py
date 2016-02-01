@@ -58,8 +58,9 @@ def test_read_table():
     temp_csv_file.seek(0)
 
     file_dict = {2011: temp_csv_file.name}
-    df = pk.read_table(file_dict, columns_to_drop=['drop1'],
-                       categorical_var=['categ1'], time_var=['time1'],
+    df = pk.read_table(file_dict, data_dir=None, paths=None,
+                       columns_to_drop=['drop1'], categorical_var=['categ1'],
+                       time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
 
     df_test = pd.DataFrame({'id': [1, 1, 2],
@@ -95,7 +96,8 @@ def test_read_entry_exit():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_employment_education(file_dict=file_dict,
+    df = pk.get_employment_education(file_dict=file_dict, data_dir=None,
+                                     paths=None,
                                      metadata_file=temp_meta_file.name)
 
     # make sure values are floats
@@ -147,7 +149,7 @@ def test_get_enrollment():
     file_dict = {2011: temp_csv_file.name}
 
     # first try with groups=True (default)
-    df = pk.get_enrollment(file_dict=file_dict,
+    df = pk.get_enrollment(file_dict=file_dict, data_dir=None, paths=None,
                            metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
@@ -159,8 +161,8 @@ def test_get_enrollment():
     pdt.assert_frame_equal(df, df_test)
 
     # try again with groups=False
-    df = pk.get_enrollment(groups=False, file_dict=file_dict,
-                           metadata_file=temp_meta_file.name,
+    df = pk.get_enrollment(groups=False, file_dict=file_dict, data_dir=None,
+                           paths=None, metadata_file=temp_meta_file.name,
                            groupID_column='id')
 
     df_test = pd.DataFrame({'id': [1, 1, 2],
@@ -195,7 +197,8 @@ def test_get_exit():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_exit(file_dict=file_dict, metadata_file=temp_meta_file.name,
+    df = pk.get_exit(file_dict=file_dict, data_dir=None, paths=None,
+                     metadata_file=temp_meta_file.name,
                      df_destination_column='dest')
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
@@ -285,8 +288,8 @@ def test_get_client():
     temp_meta_file.seek(0)
 
     # get path & filenames
-    df = pk.get_client(file_dict=file_dict, years=years,
-                       metadata_file=temp_meta_file.name,
+    df = pk.get_client(file_dict=file_dict, data_dir=None, paths=None,
+                       years=years, metadata_file=temp_meta_file.name,
                        dob_column='dob_col')
 
     df_test = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
@@ -310,7 +313,8 @@ def test_get_client():
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
     assert_raises(ValueError, pk.get_client,
-                  file_dict=file_dict, metadata_file=temp_meta_file2.name,
+                  file_dict=file_dict, data_dir=None, paths=None,
+                  metadata_file=temp_meta_file2.name,
                   dob_column='dob_col')
 
     temp_csv_file1.close()
@@ -341,7 +345,7 @@ def test_get_disabilities():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_disabilities(file_dict=file_dict,
+    df = pk.get_disabilities(file_dict=file_dict, data_dir=None, paths=None,
                              metadata_file=temp_meta_file.name)
 
     type_dict = {5: 'Physical', 6: 'Developmental', 7: 'ChronicHealth',
@@ -366,8 +370,9 @@ def test_get_disabilities():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.get_disabilities,
-                  file_dict=file_dict, metadata_file=temp_meta_file2.name)
+    assert_raises(ValueError, pk.get_disabilities, file_dict=file_dict,
+                  data_dir=None, paths=None,
+                  metadata_file=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
@@ -394,8 +399,8 @@ def test_read_entry_exit():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.read_entry_exit_table(file_dict=file_dict,
-                                  metadata=temp_meta_file.name)
+    df = pk.read_entry_exit_table(file_dict=file_dict, data_dir=None,
+                                  paths=None, metadata=temp_meta_file.name)
 
     # make sure values are floats
     df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
@@ -415,8 +420,8 @@ def test_read_entry_exit():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.read_entry_exit_table,
-                  file_dict=file_dict, metadata=temp_meta_file2.name)
+    assert_raises(ValueError, pk.read_entry_exit_table, file_dict=file_dict,
+                  data_dir=None, paths=None, metadata=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
