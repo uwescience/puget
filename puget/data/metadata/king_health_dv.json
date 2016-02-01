@@ -1,0 +1,15 @@
+{
+"name":"health_dv",
+"duplicate_check_columns":["ProjectEntryID", "DomesticViolenceVictim",
+                           "GeneralHealthStatus", "PregnancyStatus",
+                           "DataCollectionStage"],
+"columns_to_drop":["HealthAndDVID","PersonalID", "InformationDate",
+                   "WhenOccurred", "DentalHealthStatus", "MentalHealthStatus",
+                   "DueDate", "DateCreated", "DateUpdated",
+                   "UserID", "DateDeleted", "ExportID", "years"],
+"categorical_var":["DomesticViolenceVictim", "GeneralHealthStatus",
+                   "PregnancyStatus"],
+"collection_stage_column":["DataCollectionStage"],
+"entry_stage_val":1, "exit_stage_val":3,
+"uniqueID":["ProjectEntryID"]
+}

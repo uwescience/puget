@@ -686,3 +686,92 @@ def get_disabilities(file_dict='Disabilities.csv',
     df_wide = df_wide.rename(columns=rename_dict)
 
     return df_wide
+
+
+def get_employment_education(file_dict='EmploymentEducation.csv',
+                             data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                             metadata_file=op.join(
+                                DATA_PATH, 'metadata',
+                                'king_employment_education.json')):
+    """
+    Read in the EmploymentEducation tables from King.
+
+    Parameters
+    ----------
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
+
+    data_dir : string
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
+
+    paths : list
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
+
+    years : list
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage
+
+    Returns
+    ----------
+    dataframe with rows representing employment and education at entry & exit
+              of a person per enrollment
+    """
+    df_wide = read_entry_exit_table(file_dict=file_dict, data_dir=data_dir,
+                                    paths=paths, years=years,
+                                    metadata=metadata_file)
+
+    return df_wide
+
+
+def get_health_dv(file_dict='HealthAndDV.csv',
+                  data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                  metadata_file=op.join(DATA_PATH, 'metadata',
+                                        'king_health_dv.json')):
+    """
+    Read in the HealthAndDV tables from King.
+
+    Parameters
+    ----------
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
+
+    data_dir : string
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
+
+    paths : list
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
+
+    years : list
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
+
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage
+
+    Returns
+    ----------
+    dataframe with rows representing employment and education at entry & exit
+              of a person per enrollment
+    """
+    df_wide = read_entry_exit_table(file_dict=file_dict, data_dir=data_dir,
+                                    paths=paths, years=years,
+                                    metadata=metadata_file)
+
+    return df_wide
