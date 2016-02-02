@@ -690,3 +690,81 @@ def get_health_dv(file_dict='HealthAndDV.csv',
 
 get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
                                                  metdata_boilerplate)
+
+
+def get_king_income(file_dict='IncomeBenefits.csv',
+                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                    metadata_file=op.join(DATA_PATH, 'metadata',
+                                          'king_income.json')):
+    """
+    Read in the IncomeBenefits tables from King.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage and list of
+             columns to sum over for income variables
+
+    Returns
+    ----------
+    dataframe with rows representing income at entry & exit of a person per
+        enrollment
+    """
+    metadata = get_metadata_dict(metadata_file)
+    if 'columns_to_sum' in metadata:
+        columns_to_sum = metadata.pop('columns_to_sum')
+    else:
+        raise ValueError(k + ' entry must be present in metadata file')
+    uniqueID = metadata['uniqueID']
+
+    suffixes = ENTRY_EXIT_SUFFIX
+    df_wide = read_entry_exit_table(metadata, file_dict=file_dict,
+                                    data_dir=data_dir, paths=paths,
+                                    years=years, suffixes=suffixes)
+
+    new_df = pd.dataframe(columns=df_wide.columns.values)
+    gb = groupby(df_wide, uniqueID)
+    for grp in gb:
+        update_dict = {}
+        for sf in suffixes:
+            for col in columns_to_sum:
+                colname = col + sf
+                update_dict[colname] = grp[colname].max()
+        this_df = pd.DataFrame(columns=list(update_dict.keys())
+                               data=list(update_dict.values()))
+        new_df = new_df.append(this_df)
+
+    return new_df
+
+
+def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
+                years=None, metadata_file=op.join(DATA_PATH, 'metadata',
+                                                  'king_project.json'),
+                project_type_column='ProjectType'):
+    """
+    Read in the Exit tables from King and map Destinations.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+
+    project_type_column : string
+        column containing the numeric project type codes
+
+    Returns
+    ----------
+    dataframe with rows representing exit record of a person per enrollment
+    """
+    metadata = get_metadata_dict(metadata_file)
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+
+    df_merge = pu.merge_destination(
+        df, df_destination_column=df_destination_column)
+
+    return df_merge
