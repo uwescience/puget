@@ -1,7 +1,10 @@
 {
 "name":"disabilities",
-"duplicate_check_columns":["ProjectEntryID", "DisabilitiesID"],
-"columns_to_drop":["PersonalID", "InformationDate", "IndefiniteAndImpairs", "ReceivingServices", "DocumentationOnFile", "PATHHowConfirmed",
+"duplicate_check_columns":["ProjectEntryID", "DataCollectionStage",
+                           "DisabilityType", "DisabilityResponse"],
+"columns_to_drop":["DisabilitiesID", "PersonalID", "InformationDate",
+                   "IndefiniteAndImpairs", "ReceivingServices",
+                   "DocumentationOnFile", "PATHHowConfirmed",
                    "PATHSMIInformation", "DateCreated", "DateUpdated", "UserID",
                    "DateDeleted", "ExportID", "years"],
 "categorical_var":["DisabilityResponse"],
@@ -9,5 +12,5 @@
 "entry_stage_val":1, "exit_stage_val":3,
 "type_column":["DisabilityType"],
 "response_column":["DisabilityResponse"],
-"primaryID":["ProjectEntryID"]
+"uniqueID":["ProjectEntryID"]
 }

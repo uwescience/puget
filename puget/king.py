@@ -44,6 +44,35 @@ FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
+# entry/exit suffixes for columns
+ENTRY_EXIT_SUFFIX = ['_entry', '_exit']
+
+file_path_boilerplate = (
+    """
+    file_dict : dict or string
+        if a dict, keys should be years, values should be full path to files
+        if a string, should be the filename of the .csv table and data_dir,
+            paths and years parameters are required
+
+    data_dir : string
+        full path to general data folder (usually puget/data);
+            not required if file_dict is a dictionary
+
+    paths : list
+        list of directories inside data_dir to look for csv files in;
+            not required if file_dict is a dictionary
+
+    years : list
+        list of years to include, default is to include all years;
+            not required if file_dict is a dictionary
+    """)
+metdata_boilerplate = (
+    """
+    metadata_file : string
+        name of json metadata file with lists of columns to use for
+        deduplication, columns to drop, categorical and time-like columns
+    """)
+
 
 def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
     """
@@ -81,7 +110,7 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
     return file_dict
 
 
-def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
+def read_table(file_dict, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None, dedup=True):
@@ -90,22 +119,7 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
 
     Parameters
     ----------
-    file_dict : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
-
-    data_dir : string
-        full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
-
-    paths : list
-        list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
+    %s
 
     columns_to_drop : list
         A list of of columns to drop. The default is None.
@@ -146,6 +160,10 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
             raise ValueError(
                 'If file_dict is a string, data_dir must be passed')
         file_dict = std_path_setup(file_dict, data_dir=data_dir, paths=paths)
+    else:
+        if data_dir is not None or paths is not None:
+            raise ValueError(
+                'If file_dict is a dict, data_dir and paths cannot be passed')
 
     file_dict_use = file_dict.copy()
 
@@ -181,6 +199,111 @@ def read_table(file_dict, data_dir=None, paths=FILEPATHS, years=None,
         df[col] = pd.to_datetime(df[col], errors='coerce')
     return df
 
+read_table.__doc__ = read_table.__doc__ % file_path_boilerplate
+
+
+def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
+    """
+    create separate enty and exit columns for dataframes that have that
+    information provided as a column giving the collection stage
+    (coded as numerical values) and other columns containing the measurements
+    at entry/exit
+
+    Parameters
+    ----------
+    df: dataframe
+        input dataframe
+
+    type_column : string
+        name of column containing the types to be remapped to columns
+
+    type_suffix : dict
+        keys are values in type_column, values are suffixes to attach to the
+        column for that type
+
+    merge_columns: list or string
+        name(s) of column(s) containing to merge on.
+
+    Returns
+    ----------
+    new dataframe with response columns split into *_entry and *_exit columns
+    """
+    columns_to_rename = list(df.columns.values)
+    if isinstance(merge_columns, list):
+        for col in merge_columns:
+            columns_to_rename.remove(col)
+    else:
+        columns_to_rename.remove(merge_columns)
+
+    columns_to_rename.remove(type_column)
+
+    # group by each type in turn
+    gb = df.groupby(type_column)
+    for index, tpl in enumerate(gb):
+        name, group = tpl
+        rename_dict = dict(zip(
+            columns_to_rename,
+            [s + type_suffix[name] for s in columns_to_rename]))
+        this_df = group.rename(columns=rename_dict).drop(type_column, axis=1)
+        if index == 0:
+            df_wide = this_df
+        else:
+            df_wide = pd.merge(df_wide, this_df, how='outer', on=merge_columns)
+
+    return df_wide
+
+
+def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
+                          paths=FILEPATHS, years=None,
+                          suffixes=ENTRY_EXIT_SUFFIX):
+    """
+    Read in tables with entry & exit values, convert entry & exit rows to
+    columns
+
+    Parameters
+    ----------
+    metadata : string or dict
+        if dict: metadata dict
+        if string: name of json metadata file
+        lists of columns to use for deduplication, columns to drop,
+        categorical and time-like columns
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage
+
+    %s
+
+    Returns
+    ----------
+    dataframe with one row per person per enrollment -- rows containing
+    separate entry & exit values are combined with different columns for
+    entry & exit
+    """
+    if not isinstance(metadata, dict):
+        metadata = get_metadata_dict(metadata)
+    extra_metadata = {'collection_stage_column': None,
+                      'entry_stage_val': None,
+                      'exit_stage_val': None,
+                      'uniqueID': None}
+    for k in extra_metadata:
+        if k in metadata:
+            extra_metadata[k] = metadata.pop(k)
+        else:
+            raise ValueError(k + ' entry must be present in metadata file')
+
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+
+    df_wide = split_rows_to_columns(
+            df, extra_metadata['collection_stage_column'],
+            dict(zip([extra_metadata['entry_stage_val'],
+                      extra_metadata['exit_stage_val']], suffixes)),
+            extra_metadata['uniqueID'])
+
+    return df_wide
+
+read_entry_exit_table.__doc__ = read_entry_exit_table.__doc__ % (
+        file_path_boilerplate)
+
 
 def get_metadata_dict(metadata_file):
     """Little function to read a JSON metadata file into a dict."""
@@ -203,29 +326,12 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
 
     Parameters
     ----------
+    %s
+
+    %s
+
     groups : boolean
         If true, only return rows for groups (>1 person)
-
-    file_dict : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
-
-    data_dir : string
-        full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
-
-    paths : list
-        list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
-
-    metadata_file : string
-        name of json metadata file with lists of columns to use for
-        deduplication, columns to drop, categorical and time-like columns
 
     groupID_column : string
         column to use for identifying groups within the
@@ -233,7 +339,8 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
 
     Returns
     ----------
-    dataframe with cleaned up rows of enrollments from King's Enrollment file
+    dataframe with rows representing enrollment record of a person per
+        enrollment, optionally with people who are not in groups removed
     """
     metadata = get_metadata_dict(metadata_file)
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
@@ -253,46 +360,30 @@ def get_enrollment(groups=True, file_dict='Enrollment.csv',
 
     return df
 
+get_enrollment.__doc__ = get_enrollment.__doc__ % (file_path_boilerplate,
+                                                   metdata_boilerplate)
+
 
 def get_exit(file_dict='Exit.csv',
              data_dir=KING_DATA, paths=FILEPATHS, years=None,
-             metadata_file=op.join(DATA_PATH, 'metadata', 'king_client.json'),
+             metadata_file=op.join(DATA_PATH, 'metadata', 'king_exit.json'),
              df_destination_column='Destination'):
     """
     Read in the Exit tables from King and map Destinations.
 
     Parameters
     ----------
-    file_dict : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
+    %s
 
-    data_dir : string
-        full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
-
-    paths : list
-        list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
-
-    metadata_file : string
-        name of json metadata file with lists of columns to use for
-        deduplication, columns to drop, categorical and time-like columns
+    %s
 
     df_destination_column : string
         column containing the numeric destination codes
 
     Returns
     ----------
-    dataframe with rows representing exit record of a person per project
+    dataframe with rows representing exit record of a person per enrollment
     """
-    if metadata_file is None:
-        metadata_file = op.join(DATA_PATH, 'metadata', 'king_exit.json')
     metadata = get_metadata_dict(metadata_file)
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
@@ -301,6 +392,9 @@ def get_exit(file_dict='Exit.csv',
         df, df_destination_column=df_destination_column)
 
     return df_merge
+
+get_exit.__doc__ = get_exit.__doc__ % (file_path_boilerplate,
+                                       metdata_boilerplate)
 
 
 def get_client(file_dict='Client.csv',
@@ -311,26 +405,11 @@ def get_client(file_dict='Client.csv',
 
     Parameters
     ----------
-    file_dict : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
+    %s
 
-    data_dir : string
-        full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
-
-    paths : list
-        list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
-
-    metadata_file : string
-        name of json metadata file with lists of columns to use for
-        deduplication, columns to drop, categorical and time-like columns
+    %s
+        ALSO lists of boolean and numerically coded columns and
+             personalID column
 
     dob_column: string
         name of column containing the client date of birth
@@ -462,6 +541,9 @@ def get_client(file_dict='Client.csv',
 
     return df
 
+get_client.__doc__ = get_client.__doc__ % (file_path_boilerplate,
+                                           metdata_boilerplate)
+
 
 def get_disabilities(file_dict='Disabilities.csv',
                      data_dir=KING_DATA, paths=FILEPATHS, years=None,
@@ -476,26 +558,11 @@ def get_disabilities(file_dict='Disabilities.csv',
 
     Parameters
     ----------
-    file_dict : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
+    %s
 
-    data_dir : string
-        full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
-
-    paths : list
-        list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
-
-    metadata_file : string
-        name of json metadata file with lists of columns to use for
-        deduplication, columns to drop, categorical and time-like columns
+    %s
+        ALSO names of columns containing collection stage, type, response and
+             uniqueIDs and values indicating entry and exit collection stage
 
     disability_type_file : string
         name of json file with mapping between disability numeric codes and
@@ -503,15 +570,12 @@ def get_disabilities(file_dict='Disabilities.csv',
 
     Returns
     ----------
-    dataframe with rows representing exit record of a person per project
+    dataframe with rows representing presence of disability types at entry &
+        exit of a person per enrollment
     """
     metadata = get_metadata_dict(metadata_file)
-    extra_metadata = {'collection_stage_column': None,
-                      'entry_stage_val': None,
-                      'exit_stage_val': None,
-                      'type_column': None,
-                      'response_column': None,
-                      'primaryID': None}
+    extra_metadata = {'type_column': None,
+                      'response_column': None}
 
     for k in extra_metadata:
         if k in metadata:
@@ -519,45 +583,110 @@ def get_disabilities(file_dict='Disabilities.csv',
         else:
             raise ValueError(k + ' entry must be present in metadata file')
 
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+    extra_metadata['uniqueID'] = metadata['uniqueID']
 
-    df_entry = df.groupby(extra_metadata['collection_stage_column']).get_group(
-        extra_metadata['entry_stage_val'])
-    df_exit = df.groupby(extra_metadata['collection_stage_column']).get_group(
-        extra_metadata['exit_stage_val'])
+    stage_suffixes = ENTRY_EXIT_SUFFIX
+    df_stage = read_entry_exit_table(metadata, file_dict=file_dict,
+                                     data_dir=data_dir, paths=paths,
+                                     years=years, suffixes=stage_suffixes)
 
-    # Use pivot_table, only capturing DisabilityResponse and ProjectEntryID
-    df_entry_wide = df_entry.pivot_table(
-                        values=extra_metadata['response_column'],
-                        index=[extra_metadata['primaryID']],
-                        columns=extra_metadata['type_column'])
-    df_entry_wide.columns = df_entry_wide.columns.tolist()
-    df_entry_wide.insert(0, extra_metadata['primaryID'], df_entry_wide.index)
-#    df_entry_wide[extra_metadata['primaryID']] = df_entry_wide.index
-
-    df_exit_wide = df_exit.pivot_table(
-                        values=extra_metadata['response_column'],
-                        index=[extra_metadata['primaryID']],
-                        columns=extra_metadata['type_column'])
-    df_exit_wide.columns = df_exit_wide.columns.tolist()
-    df_exit_wide.insert(0, extra_metadata['primaryID'], df_exit_wide.index)
-#    df_exit_wide[extra_metadata['primaryID']] = df_exit_wide.index
-
-    # Rename columns
     mapping_dict = get_metadata_dict(disability_type_file)
-    entry_mapping = {}
-    exit_mapping = {}
-    # add entry or exit tags to column names and turn keys into ints
-    for k, v in mapping_dict.items():
-        entry_mapping[int(k)] = v + '_entry'
-        exit_mapping[int(k)] = v + '_exit'
+    # convert to integer keys
+    mapping_dict = {int(k): v for k, v in mapping_dict.items()}
 
-    df_entry_wide = df_entry_wide.rename(columns=entry_mapping)
-    df_exit_wide = df_exit_wide.rename(columns=exit_mapping)
+    type_suffixes = ['_' + s for s in mapping_dict.values()]
+    merge_columns = [extra_metadata['uniqueID'],
+                     extra_metadata['type_column'] + stage_suffixes[1],
+                     extra_metadata['response_column'] + stage_suffixes[1]]
+    df_type1 = split_rows_to_columns(df_stage, (extra_metadata['type_column'] +
+                                                stage_suffixes[0]),
+                                     dict(zip(list(mapping_dict.keys()),
+                                          type_suffixes)), merge_columns)
 
-    # Merge together disabilities_entry and disabilities_exit
-    df_wide = pd.merge(df_entry_wide, df_exit_wide,
-                       on=extra_metadata['primaryID'], how='outer')
+    merge_columns = [extra_metadata['uniqueID']]
+    for ts in type_suffixes:
+        col = extra_metadata['response_column'] + stage_suffixes[0] + ts
+        if col in list(df_type1.columns.values):
+            merge_columns.append(col)
+    df_wide = split_rows_to_columns(df_type1, (extra_metadata['type_column'] +
+                                    stage_suffixes[1]),
+                                    dict(zip(list(mapping_dict.keys()),
+                                             type_suffixes)), merge_columns)
+
+    response_cols = []
+    new_cols = []
+    for ss in stage_suffixes:
+        for i, ts in enumerate(type_suffixes):
+            col = extra_metadata['response_column'] + ss + ts
+            if col in list(df_wide.columns.values):
+                response_cols.append(col)
+                new_cols.append(ts[1:] + ss)
+
+    rename_dict = dict(zip(response_cols, new_cols))
+    df_wide = df_wide.rename(columns=rename_dict)
 
     return df_wide
+
+get_disabilities.__doc__ = get_disabilities.__doc__ % (file_path_boilerplate,
+                                                       metdata_boilerplate)
+
+
+def get_employment_education(file_dict='EmploymentEducation.csv',
+                             data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                             metadata_file=op.join(
+                                DATA_PATH, 'metadata',
+                                'king_employment_education.json')):
+    """
+    Read in the EmploymentEducation tables from King.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage
+
+    Returns
+    ----------
+    dataframe with rows representing employment and education at entry & exit
+              of a person per enrollment
+    """
+    df_wide = read_entry_exit_table(metadata_file, file_dict=file_dict,
+                                    data_dir=data_dir, paths=paths,
+                                    years=years)
+
+    return df_wide
+
+get_employment_education.__doc__ = get_employment_education.__doc__ % (
+    file_path_boilerplate, metdata_boilerplate)
+
+
+def get_health_dv(file_dict='HealthAndDV.csv',
+                  data_dir=KING_DATA, paths=FILEPATHS, years=None,
+                  metadata_file=op.join(DATA_PATH, 'metadata',
+                                        'king_health_dv.json')):
+    """
+    Read in the HealthAndDV tables from King.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage
+
+    Returns
+    ----------
+    dataframe with rows representing employment and education at entry & exit
+              of a person per enrollment
+    """
+    df_wide = read_entry_exit_table(metadata_file, file_dict=file_dict,
+                                    data_dir=data_dir, paths=paths,
+                                    years=years)
+
+    return df_wide
+
+get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
+                                                 metdata_boilerplate)
