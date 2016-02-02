@@ -706,7 +706,7 @@ def get_king_income(file_dict='IncomeBenefits.csv',
     %s
         ALSO names of columns containing collection stage, and uniqueIDs
              and values indicating entry and exit collection stage and list of
-             columns to sum over for income variables
+             columns to take max over for income variables
 
     Returns
     ----------
@@ -714,8 +714,8 @@ def get_king_income(file_dict='IncomeBenefits.csv',
         enrollment
     """
     metadata = get_metadata_dict(metadata_file)
-    if 'columns_to_sum' in metadata:
-        columns_to_sum = metadata.pop('columns_to_sum')
+    if 'columns_to_take_max' in metadata:
+        columns_to_take_max = metadata.pop('columns_to_take_max')
     else:
         raise ValueError(k + ' entry must be present in metadata file')
     uniqueID = metadata['uniqueID']
@@ -730,10 +730,10 @@ def get_king_income(file_dict='IncomeBenefits.csv',
     for grp in gb:
         update_dict = {}
         for sf in suffixes:
-            for col in columns_to_sum:
+            for col in columns_to_take_max:
                 colname = col + sf
                 update_dict[colname] = grp[colname].max()
-        this_df = pd.DataFrame(columns=list(update_dict.keys())
+        this_df = pd.DataFrame(columns=list(update_dict.keys()),
                                data=list(update_dict.values()))
         new_df = new_df.append(this_df)
 
