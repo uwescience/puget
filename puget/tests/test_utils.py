@@ -5,55 +5,43 @@ import pandas as pd
 import pandas.util.testing as pdt
 import numpy as np
 import tempfile
-from nose import with_setup
 
 
-class TestFunctions(object):
-    """Class for testing utils.py with setup and teardown methods."""
+def test_merge_destination():
+    """Test merge_destination function."""
+    TF = tempfile.NamedTemporaryFile(mode='w')
+    df = pd.DataFrame({'Standard': ['New Standards', 'New Standards',
+                                    'New Standards', 'Old Standards'],
+                       'DestinationNumeric': [1, 2, 3, 4],
+                       'DestinationDescription': ['Success no subsidy',
+                                                  'Success with subsidy',
+                                                  'Unsuccessful',
+                                                  'Unsuccessful'],
+                       'DestinationGroup': ['Permanent', 'Permanent',
+                                            'Temporary', 'Temporary'],
+                       'DestinationSuccess': ['Successful Exit',
+                                              'Successful Exit',
+                                              'Other Exit', 'Other Exit'],
+                       'Subsidy': ['No', 'Yes', 'No', 'No']})
+    df.to_csv(TF, index=False)
+    TF.seek(0)
 
-    @classmethod
-    def setup_class(cls):
-        """Create temporary file for testing."""
-        cls.TF = tempfile.NamedTemporaryFile(mode='w')
-        cls.TF2 = tempfile.NamedTemporaryFile(mode='w')
-        df = pd.DataFrame({'Standard': ['New Standards', 'New Standards',
-                                        'New Standards', 'Old Standards'],
-                           'DestinationNumeric': [1, 2, 3, 4],
-                           'DestinationDescription': ['Success no subsidy',
-                                                      'Success with subsidy',
-                                                      'Unsuccessful',
-                                                      'Unsuccessful'],
-                           'DestinationGroup': ['Permanent', 'Permanent',
-                                                'Temporary', 'Temporary'],
-                           'DestinationSuccess': ['Successful Exit',
-                                                  'Successful Exit',
-                                                  'Other Exit', 'Other Exit'],
-                           'Subsidy': ['No', 'Yes', 'No', 'No']})
-        df.to_csv(cls.TF, index=False)
-        cls.TF.seek(0)
+    path, fname = op.split(TF.name)
+    df = pd.DataFrame({'numeric': [1, 2, 3]})
+    df_merge = pu.merge_destination(df, df_destination_column='numeric',
+                                    destination_map_fname=fname,
+                                    directory=path)
+    df_test = pd.DataFrame({'DestinationNumeric': [1, 2, 3],
+                            'DestinationDescription': [
+                                'Success no subsidy',
+                                'Success with subsidy',
+                                'Unsuccessful'],
+                            'DestinationGroup': ['Permanent', 'Permanent',
+                                                 'Temporary'],
+                            'DestinationSuccess': ['Successful Exit',
+                                                   'Successful Exit',
+                                                   'Other Exit'],
+                            'Subsidy': [False, True, False]})
+    pdt.assert_frame_equal(df_merge, df_test)
 
-    @classmethod
-    def teardown_class(cls):
-        """Close temporary file."""
-        cls.TF.close()
-        cls.TF2.close()
-
-    def test_merge_destination(self):
-        """Test merge_destination function."""
-        path, fname = op.split(self.TF.name)
-        df = pd.DataFrame({'numeric': [1, 2, 3]})
-        df_merge = pu.merge_destination(df, df_destination_column='numeric',
-                                        destination_map_fname=fname,
-                                        directory=path)
-        df_test = pd.DataFrame({'DestinationNumeric': [1, 2, 3],
-                                'DestinationDescription': [
-                                    'Success no subsidy',
-                                    'Success with subsidy',
-                                    'Unsuccessful'],
-                                'DestinationGroup': ['Permanent', 'Permanent',
-                                                     'Temporary'],
-                                'DestinationSuccess': ['Successful Exit',
-                                                       'Successful Exit',
-                                                       'Other Exit'],
-                                'Subsidy': [False, True, False]})
-        pdt.assert_frame_equal(df_merge, df_test)
+    TF.close()
