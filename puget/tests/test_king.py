@@ -426,3 +426,25 @@ def test_read_entry_exit():
     temp_csv_file.close()
     temp_meta_file.close()
     temp_meta_file2.close()
+
+
+def test_get_income():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'pid': [11, 11, 11, 12, 12, 12, 12],
+                            'stage': [0, 0, 1, 0, 0, 1, 1],
+                            'income': [5, 8, 12, 0, 6, 99, 3]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['pid', 'stage', 'income'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['income'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 0,
+                'exit_stage_val': 1, 'uniqueID': 'pid'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}

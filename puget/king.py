@@ -743,7 +743,9 @@ def get_king_income(file_dict='IncomeBenefits.csv',
 def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
                 years=None, metadata_file=op.join(DATA_PATH, 'metadata',
                                                   'king_project.json'),
-                project_type_column='ProjectType'):
+                project_type_column='ProjectType',
+                project_type_file=op.join(DATA_PATH, 'metadata',
+                                          'project_type.json')):
     """
     Read in the Exit tables from King and map Destinations.
 
@@ -764,7 +766,16 @@ def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
-    df_merge = pu.merge_destination(
-        df, df_destination_column=df_destination_column)
+    # get project_type dict
+    mapping_dict = get_metadata_dict(project_type_file)
+    # convert to integer keys
+    mapping_dict = {int(k): v for k, v in mapping_dict.items()}
 
-    return df_merge
+    map_df = pd.dataframe(columns=['ProjectNumeric', 'ProjectType'],
+                          data=list(mapping_dict.values()))
+
+    df_merge = pd.merge(left=df, right=map_df, how='left',
+                        left_on=project_type_column,
+                        right_on='ProjectNumeric')
+
+    return df.merge
