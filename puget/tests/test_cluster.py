@@ -8,9 +8,6 @@ import pandas.util.testing as pdt
 import puget.cluster as cluster
 
 
-def test_make_mapping():
-    pass
-
 
 def test_cluster_by_groups():
     # In the first case, all individuals are linked through a chain of

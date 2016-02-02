@@ -4,14 +4,7 @@
 import numpy as np
 import pandas as pd
 import itertools
-from collections import OrderedDict
-
-try:
-    from fastcluster import linkage
-except ImportError:
-    from scipy.cluster.hierarchy import linkage
-
-from scipy.cluster.hierarchy import fcluster
+import networkx as nx
 
 
 def make_mapping(unique_individuals):
@@ -36,7 +29,7 @@ def make_mapping(unique_individuals):
 
 
 def groups_co_occurrence(df, individual_var, group_var, T=None,
-                        mapping=None):
+                         mapping=None):
     """
     Count the co-occurrence of individuals in a group.
 
@@ -46,10 +39,6 @@ def groups_co_occurrence(df, individual_var, group_var, T=None,
     (mapped through mapping and inv_mapping) have appeared together in the
     same group.
     """
-    # Filter to non-null client_key and non-null group_key
-    df = df[pd.notnull(df[individual_var])]
-    df = df[pd.notnull(df[group_var])]
-
     unique_individuals = df[individual_var].unique()
     if T is None:
         T = np.zeros((unique_individuals.shape[0],
@@ -123,26 +112,6 @@ def time_co_occurrence(df, individual_var, time_var, time_unit='ns',
     return T
 
 
-def linkage_matrix(T):
-    """
-    Calculate a linkage matrix from a co-occurrence matrix
-
-    Parameters
-    ----------
-    T : co-occurrence matrix
-    """
-    D = np.zeros_like(T)
-    # Distances are the inverse of co-occurrences:
-    D[T > 0] = 1.0 / T[T > 0]
-    # No co-occurrence translates into a distance of 2 (which is equivalent to
-    # infinity for our purposes):
-    D[T == 0] = 2
-    # Distance self-to-self is 0:
-    np.fill_diagonal(D, 0)
-    Z = linkage(D, method='complete')
-    return Z
-
-
 def cluster(df, individual_var, group_var=None, time_var=None, time_unit='ns',
             time_delta=0):
     """
@@ -183,8 +152,13 @@ def cluster(df, individual_var, group_var=None, time_var=None, time_unit='ns',
                                time_unit=time_unit,
                                time_delta=time_delta,
                                T=T, mapping=mapping)
-    Z = linkage_matrix(T)
-    clusters = fcluster(Z, t=1.01)
+
+    clusters = {}
+    T[np.tril_indices(T.shape[0])] = 0
+    G = nx.Graph(T)
+    for i, c in enumerate(nx.connected_components(G)):
+        for j in c:
+            clusters[j] = i + 1
 
     df['cluster'] = df[individual_var].apply(lambda x: clusters[mapping[x]])
     return df
