@@ -1,0 +1,8 @@
+{
+"name":"project",
+"duplicate_check_columns":["ProjectID", "OrganizationID", "ProjectName",
+                           "ProjectType"],
+"columns_to_drop":["ContinuumProject","ResidentialAffiliation",
+                   "TrackingMethod", "TargetPopulation", "DateCreated",
+                   "DateUpdated", "UserID", "DateDeleted", "ExportID", "years"]
+}
