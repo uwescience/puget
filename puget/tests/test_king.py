@@ -432,6 +432,7 @@ def test_get_income():
     temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
     df_init = pd.DataFrame({'pid': [11, 11, 11, 12, 12, 12, 12],
                             'stage': [0, 0, 1, 0, 0, 1, 1],
+                            'incomePresent':[1,1,1,0,1,0,1]
                             'income': [5, 8, 12, 0, 6, 99, 3]})
     df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
