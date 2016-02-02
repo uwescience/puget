@@ -361,7 +361,7 @@ def get_client(file_dict='Client.csv',
         raise ValueError('pid_column entry must be present in metadata file')
 
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
-                    years=years, **metadata, dedup=False)
+                    years=years, dedup=False, **metadata)
     df = df.set_index(np.arange(df.shape[0]))
 
     bad_dob = np.logical_or(df[dob_column] >
