@@ -718,7 +718,8 @@ def get_king_income(file_dict='IncomeBenefits.csv',
     if 'columns_to_take_max' in metadata:
         columns_to_take_max = metadata.pop('columns_to_take_max')
     else:
-        raise ValueError(k + ' entry must be present in metadata file')
+        raise ValueError('columns_to_take_max entry must be present in' +
+                         ' metadata file')
     uniqueID = metadata['uniqueID']
 
     suffixes = ENTRY_EXIT_SUFFIX
@@ -734,6 +735,11 @@ def get_king_income(file_dict='IncomeBenefits.csv',
 
     non_max_cols = [x for x in df_wide.columns.values
                     if x not in maximize_cols]
+    for col in non_max_cols:
+        if (col != uniqueID):
+            warnings.warn(col + ' column is not the uniqueID and is not in' +
+                          ' maximize_cols so only the first value per ' +
+                          'projectID per entry or exit will be kept')
 
     gb = df_wide.groupby(uniqueID)
     for index, tpl in enumerate(gb):

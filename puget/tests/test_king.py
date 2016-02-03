@@ -73,7 +73,22 @@ def test_read_table():
     df_test.index = pd.Int64Index([0, 1, 3])
     pdt.assert_frame_equal(df, df_test)
 
+    # test passing a string filename with data_dir and path
+    path, fname = op.split(temp_csv_file.name)
+    path0, path1 = op.split(path)
+    path_dict = {2011: path1}
+    df = pk.read_table(fname, data_dir=path0, paths=path_dict,
+                       columns_to_drop=['drop1'], categorical_var=['categ1'],
+                       time_var=['time1'],
+                       duplicate_check_columns=['id', 'time1', 'categ1'])
+
     temp_csv_file.close()
+
+    # test error checking
+    assert_raises(ValueError, pk.read_table, file_dict, data_dir=pk.KING_DATA)
+
+    # test error checking
+    assert_raises(ValueError, pk.read_table, 'test', data_dir=None, paths=None)
 
 
 def test_read_entry_exit():
@@ -96,9 +111,9 @@ def test_read_entry_exit():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_employment_education(file_dict=file_dict, data_dir=None,
-                                     paths=None,
-                                     metadata_file=temp_meta_file.name)
+    df = pk.read_entry_exit_table(file_dict=file_dict, data_dir=None,
+                                  paths=None,
+                                  metadata=temp_meta_file.name)
 
     # make sure values are floats
     df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
@@ -109,7 +124,7 @@ def test_read_entry_exit():
     df_test = df_test.sort_index(axis=1)
     pdt.assert_frame_equal(df, df_test)
 
-    # check error checking
+    # test error checking
     temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test',
                 'duplicate_check_columns': ['id', 'stage', 'value'],
@@ -118,8 +133,8 @@ def test_read_entry_exit():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.get_employment_education,
-                  file_dict=file_dict, metadata_file=temp_meta_file2.name)
+    assert_raises(ValueError, pk.read_entry_exit_table, file_dict=file_dict,
+                  metadata=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
@@ -303,7 +318,7 @@ def test_get_client():
     df_test.index = pd.Int64Index([6, 7, 8, 9, 10, 11, 12, 13])
     pdt.assert_frame_equal(df, df_test)
 
-    # check error checking
+    # test error checking
     temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
                  'categorical_var': ['bool_col', 'numeric'],
@@ -362,7 +377,7 @@ def test_get_disabilities():
     df_test = df_test.sort_index(axis=1)
     pdt.assert_frame_equal(df, df_test)
 
-    # check error checking
+    # test error checking
     temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test',
                 'duplicate_check_columns': ['pid', 'stage', 'type'],
@@ -377,6 +392,79 @@ def test_get_disabilities():
     temp_csv_file.close()
     temp_meta_file.close()
     temp_meta_file2.close()
+
+
+def test_get_employment_education():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'id': [11, 11, 12],
+                            'stage': [0, 1, 0], 'value': [0, 1, 0]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 0,
+                'exit_stage_val': 1, 'uniqueID': 'id'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_employment_education(file_dict=file_dict, data_dir=None,
+                                     paths=None,
+                                     metadata_file=temp_meta_file.name)
+
+    # make sure values are floats
+    df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
+                            'value_exit': [1, np.NaN]})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)
+
+    temp_csv_file.close()
+    temp_meta_file.close()
+
+
+def test_get_health_dv():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'id': [11, 11, 12],
+                            'stage': [0, 1, 0], 'value': [0, 1, 0]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['id', 'stage', 'value'],
+                'columns_to_drop': ['years'],
+                'categorical_var': ['value'],
+                'collection_stage_column': 'stage', 'entry_stage_val': 0,
+                'exit_stage_val': 1, 'uniqueID': 'id'}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_health_dv(file_dict=file_dict, data_dir=None, paths=None,
+                          metadata_file=temp_meta_file.name)
+
+    # make sure values are floats
+    df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
+                            'value_exit': [1, np.NaN]})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)
+
+    temp_csv_file.close()
+    temp_meta_file.close()
 
 
 def test_get_income():
@@ -413,6 +501,22 @@ def test_get_income():
                             'incomeAmount_exit': [12, 3]})
 
     pdt.assert_frame_equal(df, df_test)
+
+    # test error checking
+    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['pid', 'stage', 'type'],
+                'categorical_var': ['response']}
+    metadata_json = json.dumps(metadata)
+    temp_meta_file2.file.write(metadata_json)
+    temp_meta_file2.seek(0)
+    assert_raises(ValueError, pk.get_king_income, file_dict=file_dict,
+                  data_dir=None, paths=None,
+                  metadata_file=temp_meta_file2.name)
+
+    temp_csv_file.close()
+    temp_meta_file.close()
+    temp_meta_file2.close()
 
 
 def test_get_project():
