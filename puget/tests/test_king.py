@@ -491,8 +491,8 @@ def test_get_income():
 
     file_dict = {2011: temp_csv_file.name}
 
-    df = pk.get_king_income(file_dict=file_dict, data_dir=None, paths=None,
-                            metadata_file=temp_meta_file.name)
+    df = pk.get_income(file_dict=file_dict, data_dir=None, paths=None,
+                       metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [11, 12],
                             'income_entry': [1.0, 1.0],
@@ -510,7 +510,7 @@ def test_get_income():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.get_king_income, file_dict=file_dict,
+    assert_raises(ValueError, pk.get_income, file_dict=file_dict,
                   data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 

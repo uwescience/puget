@@ -693,10 +693,10 @@ get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
                                                  metdata_boilerplate)
 
 
-def get_king_income(file_dict='IncomeBenefits.csv',
-                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
-                    metadata_file=op.join(DATA_PATH, 'metadata',
-                                          'king_income.json')):
+def get_income(file_dict='IncomeBenefits.csv',
+               data_dir=KING_DATA, paths=FILEPATHS, years=None,
+               metadata_file=op.join(DATA_PATH, 'metadata',
+                                     'king_income.json')):
     """
     Read in the IncomeBenefits tables from King.
 
@@ -757,6 +757,9 @@ def get_king_income(file_dict='IncomeBenefits.csv',
 
     return new_df
 
+get_income.__doc__ = get_income.__doc__ % (file_path_boilerplate,
+                                           metdata_boilerplate)
+
 
 def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
                 years=None, metadata_file=op.join(DATA_PATH, 'metadata',
@@ -799,3 +802,6 @@ def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
     df_merge = df_merge.drop(project_type_column, axis=1)
 
     return df_merge
+
+get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
+                                             metdata_boilerplate)
