@@ -413,3 +413,36 @@ def test_get_income():
                             'incomeAmount_exit': [12, 3]})
 
     pdt.assert_frame_equal(df, df_test)
+
+
+def test_get_project():
+    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    df_init = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
+                            'type': [1, 13]})
+    df_init.to_csv(temp_csv_file, index=False)
+    temp_csv_file.seek(0)
+
+    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata = {'name': 'test',
+                'duplicate_check_columns': ['pid', 'name', 'type'],
+                'columns_to_drop': ['years']}
+
+    metadata_json = json.dumps(metadata)
+    temp_meta_file.file.write(metadata_json)
+    temp_meta_file.seek(0)
+
+    file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_project(file_dict=file_dict, data_dir=None, paths=None,
+                        metadata_file=temp_meta_file.name,
+                        project_type_column='type')
+
+    df_test = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
+                            'ProjectNumeric': [1, 13],
+                            'ProjectType': ['Emergency Shelter',
+                                            'PH - Rapid Re-Housing']})
+
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
+    pdt.assert_frame_equal(df, df_test)

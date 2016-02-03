@@ -783,11 +783,13 @@ def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
     # convert to integer keys
     mapping_dict = {int(k): v for k, v in mapping_dict.items()}
 
-    map_df = pd.dataframe(columns=['ProjectNumeric', 'ProjectType'],
-                          data=list(mapping_dict.values()))
+    map_df = pd.DataFrame(columns=['ProjectNumeric'],
+                          data=list(mapping_dict.keys()))
+    map_df['ProjectType'] = list(mapping_dict.values())
 
     df_merge = pd.merge(left=df, right=map_df, how='left',
                         left_on=project_type_column,
                         right_on='ProjectNumeric')
+    df_merge = df_merge.drop(project_type_column, axis=1)
 
-    return df.merge
+    return df_merge
