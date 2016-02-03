@@ -379,55 +379,6 @@ def test_get_disabilities():
     temp_meta_file2.close()
 
 
-def test_read_entry_exit():
-    temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
-    df_init = pd.DataFrame({'id': [11, 11, 12],
-                            'stage': [0, 1, 0], 'value': [0, 1, 0]})
-    df_init.to_csv(temp_csv_file, index=False)
-    temp_csv_file.seek(0)
-
-    temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
-    metadata = {'name': 'test',
-                'duplicate_check_columns': ['id', 'stage', 'value'],
-                'columns_to_drop': ['years'],
-                'categorical_var': ['value'],
-                'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'uniqueID': 'id'}
-    metadata_json = json.dumps(metadata)
-    temp_meta_file.file.write(metadata_json)
-    temp_meta_file.seek(0)
-
-    file_dict = {2011: temp_csv_file.name}
-
-    df = pk.read_entry_exit_table(file_dict=file_dict, data_dir=None,
-                                  paths=None, metadata=temp_meta_file.name)
-
-    # make sure values are floats
-    df_test = pd.DataFrame({'id': [11, 12], 'value_entry': [0, 0],
-                            'value_exit': [1, np.NaN]})
-
-    # sort because column order is not assured because started with dicts
-    df = df.sort_index(axis=1)
-    df_test = df_test.sort_index(axis=1)
-    pdt.assert_frame_equal(df, df_test)
-
-    # check error checking
-    temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
-    metadata = {'name': 'test',
-                'duplicate_check_columns': ['id', 'stage', 'value'],
-                'columns_to_drop': ['years'],
-                'categorical_var': ['value']}
-    metadata_json = json.dumps(metadata)
-    temp_meta_file2.file.write(metadata_json)
-    temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.read_entry_exit_table, file_dict=file_dict,
-                  data_dir=None, paths=None, metadata=temp_meta_file2.name)
-
-    temp_csv_file.close()
-    temp_meta_file.close()
-    temp_meta_file2.close()
-
-
 def test_get_income():
     temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
     df_init = pd.DataFrame({'pid': [11, 11, 11, 12, 12, 12, 12],
