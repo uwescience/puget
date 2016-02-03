@@ -432,20 +432,33 @@ def test_get_income():
     temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
     df_init = pd.DataFrame({'pid': [11, 11, 11, 12, 12, 12, 12],
                             'stage': [0, 0, 1, 0, 0, 1, 1],
-                            'incomePresent':[1,1,1,0,1,0,1]
-                            'income': [5, 8, 12, 0, 6, 99, 3]})
+                            'income': [1, 1, 1, 0, 1, np.NaN, 1],
+                            'incomeAmount': [5, 8, 12, 0, 6, 0, 3]})
     df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test',
-                'duplicate_check_columns': ['pid', 'stage', 'income'],
+                'duplicate_check_columns': ['pid', 'stage', 'income',
+                                            'incomeAmount'],
                 'columns_to_drop': ['years'],
                 'categorical_var': ['income'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'uniqueID': 'pid'}
+                'exit_stage_val': 1, 'uniqueID': 'pid',
+                'columns_to_take_max': ['income', 'incomeAmount']}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
     file_dict = {2011: temp_csv_file.name}
+
+    df = pk.get_king_income(file_dict=file_dict, data_dir=None, paths=None,
+                            metadata_file=temp_meta_file.name)
+
+    df_test = pd.DataFrame({'pid': [11, 12],
+                            'income_entry': [1.0, 1.0],
+                            'income_exit': [1.0, 1.0],
+                            'incomeAmount_entry': [8, 6],
+                            'incomeAmount_exit': [12, 3]})
+
+    pdt.assert_frame_equal(df, df_test)

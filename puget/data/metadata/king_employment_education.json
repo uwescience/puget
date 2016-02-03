@@ -6,7 +6,7 @@
                    "NotEmployedReason", "DateCreated", "DateUpdated",
                    "UserID", "DateDeleted", "ExportID", "years"],
 "categorical_var":["Employed"],
-"collection_stage_column":["DataCollectionStage"],
+"collection_stage_column":"DataCollectionStage",
 "entry_stage_val":1, "exit_stage_val":3,
-"uniqueID":["ProjectEntryID"]
+"uniqueID":"ProjectEntryID"
 }

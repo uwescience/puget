@@ -202,7 +202,7 @@ def read_table(file_dict, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
 read_table.__doc__ = read_table.__doc__ % file_path_boilerplate
 
 
-def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
+def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     """
     create separate enty and exit columns for dataframes that have that
     information provided as a column giving the collection stage
@@ -214,12 +214,12 @@ def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
     df: dataframe
         input dataframe
 
-    type_column : string
-        name of column containing the types to be remapped to columns
+    category_column : string
+        name of column containing the categories to be remapped to columns
 
-    type_suffix : dict
-        keys are values in type_column, values are suffixes to attach to the
-        column for that type
+    category_suffix : dict
+        keys are values in category_column, values are suffixes to attach to
+        the column for that category
 
     merge_columns: list or string
         name(s) of column(s) containing to merge on.
@@ -235,20 +235,21 @@ def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
-    columns_to_rename.remove(type_column)
-
-    # group by each type in turn
-    gb = df.groupby(type_column)
+    columns_to_rename.remove(category_column)
+    # group by each category in turn
+    gb = df.groupby(category_column)
     for index, tpl in enumerate(gb):
         name, group = tpl
         rename_dict = dict(zip(
             columns_to_rename,
-            [s + type_suffix[name] for s in columns_to_rename]))
-        this_df = group.rename(columns=rename_dict).drop(type_column, axis=1)
+            [s + category_suffix[name] for s in columns_to_rename]))
+        this_df = group.rename(columns=rename_dict).drop(category_column,
+                                                         axis=1)
         if index == 0:
             df_wide = this_df
         else:
-            df_wide = pd.merge(df_wide, this_df, how='outer', on=merge_columns)
+            df_wide = pd.merge(df_wide, this_df, how='outer',
+                               left_on=merge_columns, right_on=merge_columns)
 
     return df_wide
 
@@ -725,17 +726,28 @@ def get_king_income(file_dict='IncomeBenefits.csv',
                                     data_dir=data_dir, paths=paths,
                                     years=years, suffixes=suffixes)
 
-    new_df = pd.dataframe(columns=df_wide.columns.values)
-    gb = groupby(df_wide, uniqueID)
-    for grp in gb:
+    maximize_cols = []
+    for sf in suffixes:
+        for col in columns_to_take_max:
+            colname = col + sf
+            maximize_cols.append(colname)
+
+    non_max_cols = [x for x in df_wide.columns.values
+                    if x not in maximize_cols]
+
+    gb = df_wide.groupby(uniqueID)
+    for index, tpl in enumerate(gb):
+        name, group = tpl
         update_dict = {}
-        for sf in suffixes:
-            for col in columns_to_take_max:
-                colname = col + sf
-                update_dict[colname] = grp[colname].max()
-        this_df = pd.DataFrame(columns=list(update_dict.keys()),
-                               data=list(update_dict.values()))
-        new_df = new_df.append(this_df)
+        for col in maximize_cols:
+            update_dict[col] = [group[col].max()]
+        for col in non_max_cols:
+            update_dict[col] = group[col].iloc[0]
+        this_df = pd.DataFrame(data=update_dict, index=[index])
+        if index == 0:
+            new_df = this_df
+        else:
+            new_df = new_df.append(this_df)
 
     return new_df
 
