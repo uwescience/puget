@@ -45,7 +45,7 @@ FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
 # entry/exit suffixes for columns
-ENTRY_EXIT_SUFFIX = ['_entry', '_exit']
+ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
 file_path_boilerplate = (
     """
@@ -284,6 +284,7 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
     extra_metadata = {'collection_stage_column': None,
                       'entry_stage_val': None,
                       'exit_stage_val': None,
+                      'update_stage_val': None,
                       'uniqueID': None}
     for k in extra_metadata:
         if k in metadata:
@@ -297,7 +298,8 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
     df_wide = split_rows_to_columns(
             df, extra_metadata['collection_stage_column'],
             dict(zip([extra_metadata['entry_stage_val'],
-                      extra_metadata['exit_stage_val']], suffixes)),
+                      extra_metadata['exit_stage_val'],
+                      extra_metadata['update_stage_val']], suffixes)),
             extra_metadata['uniqueID'])
 
     return df_wide
