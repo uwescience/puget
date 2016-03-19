@@ -352,7 +352,8 @@ def test_get_disabilities():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['response'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 10,
-                'exit_stage_val': 20, 'type_column': 'type',
+                'exit_stage_val': 20, 'update_stage_val': 30,
+                'type_column': 'type',
                 'response_column': 'response', 'uniqueID': 'pid'}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
@@ -407,7 +408,7 @@ def test_get_employment_education():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'uniqueID': 'id'}
+                'exit_stage_val': 1, 'update_stage_val': 3, 'uniqueID': 'id'}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
