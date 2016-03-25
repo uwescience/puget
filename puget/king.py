@@ -235,7 +235,7 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
-    if isinstance(type_column, list, tuple):
+    if isinstance(type_column, (list, tuple)):
         e_s = "The type column (e.g. 'CollectionStage') needs to be defined as"
         e_s += "a single string in the relevant metadata file. Cannot be a "
         e_s += "container!"
