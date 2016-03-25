@@ -156,7 +156,8 @@ def test_get_enrollment():
     metadata = ({'name': 'test',
                  'duplicate_check_columns': ['id', 'time1', 'categ1'],
                  'columns_to_drop': ['drop1'],
-                 'categorical_var': ['categ1'], 'time_var': ['time1']})
+                 'categorical_var': ['categ1'], 'time_var': ['time1'],
+                 'groupID_column': 'id'})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -165,8 +166,7 @@ def test_get_enrollment():
 
     # first try with groups=True (default)
     df = pk.get_enrollment(file_dict=file_dict, data_dir=None, paths=None,
-                           metadata_file=temp_meta_file.name,
-                           groupID_column='id')
+                           metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1], 'time1':
                             pd.to_datetime(['2001-01-13', '2004-05-21'],
@@ -177,8 +177,7 @@ def test_get_enrollment():
 
     # try again with groups=False
     df = pk.get_enrollment(groups=False, file_dict=file_dict, data_dir=None,
-                           paths=None, metadata_file=temp_meta_file.name,
-                           groupID_column='id')
+                           paths=None, metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1, 2],
                             'time1':
@@ -205,7 +204,8 @@ def test_get_exit():
     df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
-    metadata = ({'name': 'test', 'duplicate_check_columns': ['id']})
+    metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
+                 "destination_column": 'dest'})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -213,8 +213,7 @@ def test_get_exit():
     file_dict = {2011: temp_csv_file.name}
 
     df = pk.get_exit(file_dict=file_dict, data_dir=None, paths=None,
-                     metadata_file=temp_meta_file.name,
-                     df_destination_column='dest')
+                     metadata_file=temp_meta_file.name)
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
                                         'destination_mappings.csv'))
@@ -296,16 +295,16 @@ def test_get_client():
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
                  'categorical_var': ['bool_col', 'numeric'],
-                 'time_var': ['dob_col'], 'pid_column': ['id'],
-                 'boolean': ['bool_col'], 'numeric_code': ['numeric']})
+                 'time_var': ['dob_col'], 'person_ID': ['id'],
+                 'boolean': ['bool_col'], 'numeric_code': ['numeric'],
+                 'dob_column': 'dob_col'})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
     # get path & filenames
     df = pk.get_client(file_dict=file_dict, data_dir=None, paths=None,
-                       years=years, metadata_file=temp_meta_file.name,
-                       dob_column='dob_col')
+                       years=years, metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
                             'dob_col': ['1990-01-14', pd.NaT, pd.NaT,
@@ -329,8 +328,7 @@ def test_get_client():
     temp_meta_file2.seek(0)
     assert_raises(ValueError, pk.get_client,
                   file_dict=file_dict, data_dir=None, paths=None,
-                  metadata_file=temp_meta_file2.name,
-                  dob_column='dob_col')
+                  metadata_file=temp_meta_file2.name)
 
     temp_csv_file1.close()
     temp_csv_file2.close()
@@ -530,7 +528,7 @@ def test_get_project():
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test',
                 'duplicate_check_columns': ['pid', 'name', 'type'],
-                'columns_to_drop': ['years']}
+                'columns_to_drop': ['years'], 'project_type_column': 'type'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
@@ -539,8 +537,7 @@ def test_get_project():
     file_dict = {2011: temp_csv_file.name}
 
     df = pk.get_project(file_dict=file_dict, data_dir=None, paths=None,
-                        metadata_file=temp_meta_file.name,
-                        project_type_column='type')
+                        metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
                             'ProjectNumeric': [1, 13],
@@ -551,3 +548,34 @@ def test_get_project():
     df = df.sort_index(axis=1)
     df_test = df_test.sort_index(axis=1)
     pdt.assert_frame_equal(df, df_test)
+
+
+def test_merge():
+    # make up all the csv files and metadata files
+    enrollment_df = pd.DataFrame({'personID': [0, 1],
+                                  'person_enrollID': [10, 20],
+                                  'programID': [100, 200]})
+    enrollment_metadata = {'person_enrollment_ID': 'person_enrollID',
+                           'person_ID': 'personID',
+                           'program_ID': 'programID'}
+    enrollment_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    enrollment_df.to_csv(enrollment_csv_file, index=False)
+    enrollment_csv_file.seek(0)
+    enrollment_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata_json = json.dumps(enrollment_metadata)
+    enrollment_meta_file.file.write(metadata_json)
+    enrollment_meta_file.seek(0)
+
+    exit_df = pd.DataFrame({'ppid': [10, 20],
+                            'dest_num': [12, 27]})
+    exit_metadata = {'person_enrollment_ID': 'ppid',
+                     'destination_column': 'dest_num'}
+    exit_csv_file = tempfile.NamedTemporaryFile(mode='w')
+    exit_df.to_csv(exit_csv_file, index=False)
+    exit_csv_file.seek(0)
+    exit_meta_file = tempfile.NamedTemporaryFile(mode='w')
+    metadata_json = json.dumps(exit_metadata)
+    exit_meta_file.file.write(metadata_json)
+    exit_meta_file.seek(0)
+
+    

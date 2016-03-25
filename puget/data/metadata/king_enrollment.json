@@ -1,5 +1,9 @@
 {
 "name":"enrollment",
+"person_enrollment_ID":"ProjectEntryID",
+"person_ID":"PersonalID",
+"program_ID":"ProjectID",
+"groupID_column":"HouseholdID",
 "duplicate_check_columns":["ProjectEntryID", "PersonalID",
                            "ProjectID", "HouseholdID"],
 "columns_to_drop":["OtherResidencePrior", "TimesHomelessPastThreeYears",

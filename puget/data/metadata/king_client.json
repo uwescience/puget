@@ -1,5 +1,6 @@
 {
 "name":"client",
+"person_ID":"PersonalID",
 "duplicate_check_columns":["PersonalID", "AmIndAKNative", "Asian",
                            "BlackAfAmerican", "NativeHIOtherPacific", "White",
                            "Ethnicity", "Gender", "VeteranStatus",
@@ -13,7 +14,7 @@
                    "IraqOND", "OtherTheater", "MilitaryBranch",
                    "DischargeStatus"],
 "time_var":["DOB", "YearEnteredService", "YearSeparated"],
-"pid_column":["PersonalID"],
+"dob_column": "DOB",
 "boolean":["AmIndAKNative", "Asian", "BlackAfAmerican",
            "NativeHIOtherPacific", "White", "Ethnicity", "VeteranStatus",
            "WorldWarII", "KoreanWar", "VietnamWar", "DesertStorm",

@@ -1,5 +1,6 @@
 {
 "name":"health_dv",
+"person_enrollment_ID":"ProjectEntryID",
 "duplicate_check_columns":["ProjectEntryID", "DomesticViolenceVictim",
                            "GeneralHealthStatus", "PregnancyStatus",
                            "DataCollectionStage"],

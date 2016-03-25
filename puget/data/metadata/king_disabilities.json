@@ -1,5 +1,6 @@
 {
 "name":"disabilities",
+"person_enrollment_ID":"ProjectEntryID",
 "duplicate_check_columns":["ProjectEntryID", "DataCollectionStage",
                            "DisabilityType", "DisabilityResponse"],
 "columns_to_drop":["DisabilitiesID", "PersonalID", "InformationDate",

@@ -1,4 +1,5 @@
 """Init file for puget."""
+from . import utils
 from . import king
 from . import pierce
 from . import snohomish

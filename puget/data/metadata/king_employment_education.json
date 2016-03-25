@@ -1,5 +1,6 @@
 {
 "name":"employment_education",
+"person_enrollment_ID":"ProjectEntryID",
 "duplicate_check_columns":["ProjectEntryID", "Employed", "DataCollectionStage"],
 "columns_to_drop":["EmploymentEducationID","PersonalID", "InformationDate",
                    "LastGradeCompleted", "SchoolStatus", "EmploymentType",

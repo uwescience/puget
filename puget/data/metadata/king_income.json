@@ -1,5 +1,6 @@
 {
 "name":"income",
+"person_enrollment_ID":"ProjectEntryID",
 "duplicate_check_columns":["ProjectEntryID", "IncomeFromAnySource",
                            "TotalMonthlyIncome", "Earned", "EarnedAmount",
                            "TANF", "TANFAmount", "GA", "GAAmount",
