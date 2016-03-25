@@ -202,7 +202,7 @@ def read_table(file_dict, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
 read_table.__doc__ = read_table.__doc__ % file_path_boilerplate
 
 
-def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
+def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     """
     create separate enty and exit columns for dataframes that have that
     information provided as a column giving the collection stage
@@ -214,12 +214,12 @@ def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
     df: dataframe
         input dataframe
 
-    type_column : string
-        name of column containing the types to be remapped to columns
+    category_column : string
+        name of column containing the categories to be remapped to columns
 
-    type_suffix : dict
-        keys are values in type_column, values are suffixes to attach to the
-        column for that type
+    category_suffix : dict
+        keys are values in category_column, values are suffixes to attach to
+        the column for that category
 
     merge_columns: list or string
         name(s) of column(s) containing to merge on.
@@ -235,20 +235,21 @@ def split_rows_to_columns(df, type_column, type_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
-    columns_to_rename.remove(type_column)
-
-    # group by each type in turn
-    gb = df.groupby(type_column)
+    columns_to_rename.remove(category_column)
+    # group by each category in turn
+    gb = df.groupby(category_column)
     for index, tpl in enumerate(gb):
         name, group = tpl
         rename_dict = dict(zip(
             columns_to_rename,
-            [s + type_suffix[name] for s in columns_to_rename]))
-        this_df = group.rename(columns=rename_dict).drop(type_column, axis=1)
+            [s + category_suffix[name] for s in columns_to_rename]))
+        this_df = group.rename(columns=rename_dict).drop(category_column,
+                                                         axis=1)
         if index == 0:
             df_wide = this_df
         else:
-            df_wide = pd.merge(df_wide, this_df, how='outer', on=merge_columns)
+            df_wide = pd.merge(df_wide, this_df, how='outer',
+                               left_on=merge_columns, right_on=merge_columns)
 
     return df_wide
 
@@ -690,3 +691,117 @@ def get_health_dv(file_dict='HealthAndDV.csv',
 
 get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
                                                  metdata_boilerplate)
+
+
+def get_income(file_dict='IncomeBenefits.csv',
+               data_dir=KING_DATA, paths=FILEPATHS, years=None,
+               metadata_file=op.join(DATA_PATH, 'metadata',
+                                     'king_income.json')):
+    """
+    Read in the IncomeBenefits tables from King.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+        ALSO names of columns containing collection stage, and uniqueIDs
+             and values indicating entry and exit collection stage and list of
+             columns to take max over for income variables
+
+    Returns
+    ----------
+    dataframe with rows representing income at entry & exit of a person per
+        enrollment
+    """
+    metadata = get_metadata_dict(metadata_file)
+    if 'columns_to_take_max' in metadata:
+        columns_to_take_max = metadata.pop('columns_to_take_max')
+    else:
+        raise ValueError('columns_to_take_max entry must be present in' +
+                         ' metadata file')
+    uniqueID = metadata['uniqueID']
+
+    suffixes = ENTRY_EXIT_SUFFIX
+    df_wide = read_entry_exit_table(metadata, file_dict=file_dict,
+                                    data_dir=data_dir, paths=paths,
+                                    years=years, suffixes=suffixes)
+
+    maximize_cols = []
+    for sf in suffixes:
+        for col in columns_to_take_max:
+            colname = col + sf
+            maximize_cols.append(colname)
+
+    non_max_cols = [x for x in df_wide.columns.values
+                    if x not in maximize_cols]
+    for col in non_max_cols:
+        if (col != uniqueID):
+            warnings.warn(col + ' column is not the uniqueID and is not in' +
+                          ' maximize_cols so only the first value per ' +
+                          'projectID per entry or exit will be kept')
+
+    gb = df_wide.groupby(uniqueID)
+    for index, tpl in enumerate(gb):
+        name, group = tpl
+        update_dict = {}
+        for col in maximize_cols:
+            update_dict[col] = [group[col].max()]
+        for col in non_max_cols:
+            update_dict[col] = group[col].iloc[0]
+        this_df = pd.DataFrame(data=update_dict, index=[index])
+        if index == 0:
+            new_df = this_df
+        else:
+            new_df = new_df.append(this_df)
+
+    return new_df
+
+get_income.__doc__ = get_income.__doc__ % (file_path_boilerplate,
+                                           metdata_boilerplate)
+
+
+def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
+                years=None, metadata_file=op.join(DATA_PATH, 'metadata',
+                                                  'king_project.json'),
+                project_type_column='ProjectType',
+                project_type_file=op.join(DATA_PATH, 'metadata',
+                                          'project_type.json')):
+    """
+    Read in the Exit tables from King and map Destinations.
+
+    Parameters
+    ----------
+    %s
+
+    %s
+
+    project_type_column : string
+        column containing the numeric project type codes
+
+    Returns
+    ----------
+    dataframe with rows representing exit record of a person per enrollment
+    """
+    metadata = get_metadata_dict(metadata_file)
+    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+                    years=years, **metadata)
+
+    # get project_type dict
+    mapping_dict = get_metadata_dict(project_type_file)
+    # convert to integer keys
+    mapping_dict = {int(k): v for k, v in mapping_dict.items()}
+
+    map_df = pd.DataFrame(columns=['ProjectNumeric'],
+                          data=list(mapping_dict.keys()))
+    map_df['ProjectType'] = list(mapping_dict.values())
+
+    df_merge = pd.merge(left=df, right=map_df, how='left',
+                        left_on=project_type_column,
+                        right_on='ProjectNumeric')
+    df_merge = df_merge.drop(project_type_column, axis=1)
+
+    return df_merge
+
+get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
+                                             metdata_boilerplate)

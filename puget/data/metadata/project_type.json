@@ -1,0 +1,17 @@
+{
+"name":"project_type",
+"1": "Emergency Shelter",
+"2": "Transitional Housing",
+"3": "PH - Permanent Supportive Housing (disability required for entry)",
+"4": "Street Outreach",
+"5": "Legacy HPRP",
+"6": "Services Only",
+"7": "Other Programs",
+"8": "Safe Haven",
+"9": "PH - Housing Only",
+"10": "PH - Housing with Services (no disability required for entry)",
+"11": "Day Shelter",
+"12": "Homelessness Prevention",
+"13": "PH - Rapid Re-Housing",
+"14": "Coordinated Assessment"
+}
