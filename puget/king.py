@@ -824,6 +824,7 @@ def get_project(file_dict='Project.csv', data_dir=KING_DATA, paths=FILEPATHS,
 get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
                                              metdata_boilerplate)
 
+
 def merge_tables(metadata_file_dict: metadata_file_defaults, groups=True,
                  years=None):
     """ Run all functions that clean up King tables separately, and merge them
@@ -862,9 +863,10 @@ def merge_tables(metadata_file_dict: metadata_file_defaults, groups=True,
                             left_on=enrollment_pid_column,
                             right_on=client_pid_column)
 
-    #Merge disabilities in
+    # Merge disabilities in
     disabilities = get_disabilities(years=years)
-    disabilities_metadata = get_metadata_dict(metadata_file_dict['disabilities'])
+    disabilities_metadata = get_metadata_dict(
+        metadata_file_dict['disabilities'])
     disabilities_ppid_column = disabilities_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(disabilities, how='left',
                                       left_on=enrollment_ppid_column,
@@ -872,7 +874,8 @@ def merge_tables(metadata_file_dict: metadata_file_defaults, groups=True,
 
     # Merge employment_education in
     emp_edu = get_employment_education(years=years)
-    emp_edu_metadata = get_metadata_dict(metadata_file_dict['employment_education'])
+    emp_edu_metadata = get_metadata_dict(
+        metadata_file_dict['employment_education'])
     emp_edu_ppid_column = emp_edu_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(emp_edu, how='left',
                                       left_on=enrollment_ppid_column,

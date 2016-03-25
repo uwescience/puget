@@ -577,5 +577,3 @@ def test_merge():
     metadata_json = json.dumps(exit_metadata)
     exit_meta_file.file.write(metadata_json)
     exit_meta_file.seek(0)
-
-    
