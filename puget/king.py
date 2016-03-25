@@ -204,7 +204,7 @@ read_table.__doc__ = read_table.__doc__ % file_path_boilerplate
 
 def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     """
-    create separate enty and exit columns for dataframes that have that
+    create separate entry and exit columns for dataframes that have that
     information provided as a column giving the collection stage
     (coded as numerical values) and other columns containing the measurements
     at entry/exit
@@ -235,9 +235,16 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
-    columns_to_rename.remove(category_column)
-    # group by each category in turn
-    gb = df.groupby(category_column)
+    if isinstance(type_column, list, tuple):
+        e_s = "The type column (e.g. 'CollectionStage') needs to be defined as"
+        e_s += "a single string in the relevant metadata file. Cannot be a "
+        e_s += "container!"
+        raise TypeError(e_s)
+
+    columns_to_rename.remove(type_column)
+
+    # group by each type in turn
+    gb = df.groupby(type_column)
     for index, tpl in enumerate(gb):
         name, group = tpl
         rename_dict = dict(zip(
