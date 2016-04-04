@@ -6,11 +6,13 @@
                    "IndefiniteAndImpairs", "ReceivingServices",
                    "DocumentationOnFile", "PATHHowConfirmed",
                    "PATHSMIInformation", "DateCreated", "DateUpdated", "UserID",
-                   "DateDeleted", "ExportID", "years"],
+                   "DateDeleted", "ExportID", "years",
+                   "TCellSource", "ViralLoadAvailable", "ViralLoad", "ViralLoadSource", "TCellCountAvailable","TCellCount"],
 "categorical_var":["DisabilityResponse"],
 "collection_stage_column":"DataCollectionStage",
 "entry_stage_val":1, "exit_stage_val":3, "update_stage_val":2,
 "type_column":"DisabilityType",
 "response_column":"DisabilityResponse",
 "uniqueID":"ProjectEntryID"
+
 }

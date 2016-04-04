@@ -257,7 +257,6 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
         else:
             df_wide = pd.merge(df_wide, this_df, how='outer',
                                left_on=merge_columns, right_on=merge_columns)
-
     return df_wide
 
 
@@ -302,11 +301,14 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
+    # Don't use the update stage data:
+    df = df[df[extra_metadata['collection_stage_column']] !=
+            extra_metadata['update_stage_val']]
+
     df_wide = split_rows_to_columns(
             df, extra_metadata['collection_stage_column'],
             dict(zip([extra_metadata['entry_stage_val'],
-                      extra_metadata['exit_stage_val'],
-                      extra_metadata['update_stage_val']], suffixes)),
+                      extra_metadata['exit_stage_val']], suffixes)),
             extra_metadata['uniqueID'])
 
     return df_wide
@@ -608,6 +610,7 @@ def get_disabilities(file_dict='Disabilities.csv',
     merge_columns = [extra_metadata['uniqueID'],
                      extra_metadata['type_column'] + stage_suffixes[1],
                      extra_metadata['response_column'] + stage_suffixes[1]]
+
     df_type1 = split_rows_to_columns(df_stage, (extra_metadata['type_column'] +
                                                 stage_suffixes[0]),
                                      dict(zip(list(mapping_dict.keys()),
