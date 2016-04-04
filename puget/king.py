@@ -235,16 +235,16 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
-    if isinstance(type_column, (list, tuple)):
+    if isinstance(category_column, (list, tuple)):
         e_s = "The type column (e.g. 'CollectionStage') needs to be defined as"
         e_s += "a single string in the relevant metadata file. Cannot be a "
         e_s += "container!"
         raise TypeError(e_s)
 
-    columns_to_rename.remove(type_column)
+    columns_to_rename.remove(category_column)
 
     # group by each type in turn
-    gb = df.groupby(type_column)
+    gb = df.groupby(category_column)
     for index, tpl in enumerate(gb):
         name, group = tpl
         rename_dict = dict(zip(
@@ -758,7 +758,8 @@ def get_income(file_dict='IncomeBenefits.csv',
         name, group = tpl
         update_dict = {}
         for col in maximize_cols:
-            update_dict[col] = [group[col].max()]
+            if col in group.columns:
+                update_dict[col] = [group[col].max()]
         for col in non_max_cols:
             update_dict[col] = group[col].iloc[0]
         this_df = pd.DataFrame(data=update_dict, index=[index])
