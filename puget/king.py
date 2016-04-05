@@ -45,7 +45,7 @@ FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
 CATEGORICAL_UNKNOWN = [8, 9, 99]
 
 # entry/exit suffixes for columns
-ENTRY_EXIT_SUFFIX = ['_entry', '_exit']
+ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
 file_path_boilerplate = (
     """
@@ -204,7 +204,7 @@ read_table.__doc__ = read_table.__doc__ % file_path_boilerplate
 
 def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     """
-    create separate enty and exit columns for dataframes that have that
+    create separate entry and exit columns for dataframes that have that
     information provided as a column giving the collection stage
     (coded as numerical values) and other columns containing the measurements
     at entry/exit
@@ -235,8 +235,15 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     else:
         columns_to_rename.remove(merge_columns)
 
+    if isinstance(category_column, (list, tuple)):
+        e_s = "The type column (e.g. 'CollectionStage') needs to be defined as"
+        e_s += "a single string in the relevant metadata file. Cannot be a "
+        e_s += "container!"
+        raise TypeError(e_s)
+
     columns_to_rename.remove(category_column)
-    # group by each category in turn
+
+    # group by each type in turn
     gb = df.groupby(category_column)
     for index, tpl in enumerate(gb):
         name, group = tpl
@@ -250,7 +257,6 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
         else:
             df_wide = pd.merge(df_wide, this_df, how='outer',
                                left_on=merge_columns, right_on=merge_columns)
-
     return df_wide
 
 
@@ -284,6 +290,7 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
     extra_metadata = {'collection_stage_column': None,
                       'entry_stage_val': None,
                       'exit_stage_val': None,
+                      'update_stage_val': None,
                       'uniqueID': None}
     for k in extra_metadata:
         if k in metadata:
@@ -293,6 +300,10 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
 
     df = read_table(file_dict, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
+
+    # Don't use the update stage data:
+    df = df[df[extra_metadata['collection_stage_column']] !=
+            extra_metadata['update_stage_val']]
 
     df_wide = split_rows_to_columns(
             df, extra_metadata['collection_stage_column'],
@@ -599,6 +610,7 @@ def get_disabilities(file_dict='Disabilities.csv',
     merge_columns = [extra_metadata['uniqueID'],
                      extra_metadata['type_column'] + stage_suffixes[1],
                      extra_metadata['response_column'] + stage_suffixes[1]]
+
     df_type1 = split_rows_to_columns(df_stage, (extra_metadata['type_column'] +
                                                 stage_suffixes[0]),
                                      dict(zip(list(mapping_dict.keys()),
@@ -746,7 +758,8 @@ def get_income(file_dict='IncomeBenefits.csv',
         name, group = tpl
         update_dict = {}
         for col in maximize_cols:
-            update_dict[col] = [group[col].max()]
+            if col in group.columns:
+                update_dict[col] = [group[col].max()]
         for col in non_max_cols:
             update_dict[col] = group[col].iloc[0]
         this_df = pd.DataFrame(data=update_dict, index=[index])
