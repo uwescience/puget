@@ -628,19 +628,19 @@ def test_merge():
         with open(client_meta_file, 'w') as outfile:
             json.dump(client_metadata, outfile)
 
-        disabilities_df = pd.DataFrame({'ppid': [10, 10, 20, 20],
+        disabilities_df = pd.DataFrame({'person_enrollID': [10, 10, 20, 20],
                                         'stage': [0, 1, 0, 1],
                                         'type': [5, 5, 5, 5],
                                         'response': [0, 0, 1, 1]})
         disabilities_metadata = {'name': 'disabilities',
-                                 'person_enrollment_ID': 'ppid',
+                                 'person_enrollment_ID': 'person_enrollID',
                                  'categorical_var': ['response'],
                                  'collection_stage_column': 'stage',
                                  'entry_stage_val': 0, "exit_stage_val": 1,
                                  'update_stage_val': 2, 'type_column': 'type',
                                  'response_column': 'response',
-                                 'duplicate_check_columns': ['ppid', 'stage',
-                                                             'type'],
+                                 'duplicate_check_columns': ['person_enrollID',
+                                                             'stage', 'type'],
                                  'columns_to_drop': ['years']}
 
         disabilities_csv_file = op.join(dir_year, 'Disabilities.csv')

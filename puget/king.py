@@ -892,7 +892,9 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     enroll_merge = pd.merge(left=enroll, right=exit_table, how='left',
                             left_on=enrollment_enid_column,
                             right_on=exit_ppid_column)
-    if exit_ppid_column in enroll_merge.columns:
+
+    if enrollment_enid_column != exit_ppid_column and \
+            exit_ppid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(exit_ppid_column, axis=1)
 
     # Merge client in
@@ -907,7 +909,8 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                             left_on=enrollment_pid_column,
                             right_on=client_pid_column)
 
-    if client_pid_column in enroll_merge.columns:
+    if enrollment_pid_column != client_pid_column and \
+            client_pid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(client_pid_column, axis=1)
 
     # Merge disabilities in
@@ -922,7 +925,8 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                       left_on=enrollment_enid_column,
                                       right_on=disabilities_ppid_column)
 
-    if disabilities_ppid_column in enroll_merge.columns:
+    if enrollment_enid_column != disabilities_ppid_column and \
+            disabilities_ppid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(disabilities_ppid_column, axis=1)
 
     # Merge employment_education in
@@ -937,7 +941,8 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                       left_on=enrollment_enid_column,
                                       right_on=emp_edu_ppid_column)
 
-    if emp_edu_ppid_column in enroll_merge.columns:
+    if enrollment_enid_column != emp_edu_ppid_column and \
+            emp_edu_ppid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(emp_edu_ppid_column, axis=1)
 
     # Merge health in
@@ -951,7 +956,8 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                       left_on=enrollment_enid_column,
                                       right_on=health_dv_ppid_column)
 
-    if health_dv_ppid_column in enroll_merge.columns:
+    if enrollment_enid_column != health_dv_ppid_column and \
+            health_dv_ppid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(health_dv_ppid_column, axis=1)
 
     # Merge income in
@@ -965,8 +971,9 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                       left_on=enrollment_enid_column,
                                       right_on=income_ppid_column)
 
-    if health_dv_ppid_column in enroll_merge.columns:
-        enroll_merge = enroll_merge.drop(health_dv_ppid_column, axis=1)
+    if enrollment_enid_column != income_ppid_column and \
+            income_ppid_column in enroll_merge.columns:
+        enroll_merge = enroll_merge.drop(income_ppid_column, axis=1)
 
     # Merge project in
     project = get_project(file_spec=files.get('project', None),
@@ -979,7 +986,8 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                       left_on=enrollment_prid_column,
                                       right_on=project_prid_column)
 
-    if project_prid_column in enroll_merge.columns:
+    if enrollment_prid_column != project_prid_column and \
+            project_prid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(project_prid_column, axis=1)
 
     return enroll_merge
