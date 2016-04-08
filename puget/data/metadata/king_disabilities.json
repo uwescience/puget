@@ -14,6 +14,4 @@
 "entry_stage_val":1, "exit_stage_val":3, "update_stage_val":2,
 "type_column":"DisabilityType",
 "response_column":"DisabilityResponse",
-"uniqueID":"ProjectEntryID"
-
 }

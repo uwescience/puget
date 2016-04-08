@@ -12,5 +12,4 @@
                    "PregnancyStatus"],
 "collection_stage_column":"DataCollectionStage",
 "entry_stage_val":1, "exit_stage_val":3, "update_stage_val":2,
-"uniqueID":"ProjectEntryID"
 }

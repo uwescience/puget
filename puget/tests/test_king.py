@@ -1,6 +1,7 @@
 """Tests for functions in king.py."""
 import puget.king as pk
 import puget
+import os
 import os.path as op
 import pandas as pd
 import pandas.util.testing as pdt
@@ -104,7 +105,8 @@ def test_read_entry_exit():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'update_stage_val': 2, 'uniqueID': 'id'}
+                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -154,10 +156,14 @@ def test_get_enrollment():
     temp_csv_file.seek(0)
 
     metadata = ({'name': 'test',
+                 'person_enrollment_ID': 'id',
+                 'person_ID': 'id',
+                 'program_ID': 'id',
                  'duplicate_check_columns': ['id', 'time1', 'categ1'],
                  'columns_to_drop': ['drop1'],
                  'categorical_var': ['categ1'], 'time_var': ['time1'],
-                 'groupID_column': 'id'})
+                 'groupID_column': 'id'
+                 })
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -205,7 +211,7 @@ def test_get_exit():
     temp_csv_file.seek(0)
 
     metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
-                 "destination_column": 'dest'})
+                 "destination_column": 'dest', 'person_enrollment_ID': ['id']})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -252,7 +258,6 @@ def test_get_exit():
     mapping_table['Subsidy'] = mapping_table['Subsidy'].map({'Yes': True,
                                                              'No': False})
     mapping_table = mapping_table.drop(['Standard'], axis=1)
-    mapping_table
 
     df_test = pd.DataFrame({'id': [11, 12, 13],
                             'years': [2011, 2011, 2011],
@@ -293,9 +298,10 @@ def test_get_client():
     file_dict = dict(zip(years, [temp_csv_file1.name, temp_csv_file2.name]))
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
-    metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
+    metadata = ({'name': 'test', 'person_ID': 'id',
+                 'duplicate_check_columns': ['id'],
                  'categorical_var': ['bool_col', 'numeric'],
-                 'time_var': ['dob_col'], 'person_ID': ['id'],
+                 'time_var': ['dob_col'],
                  'boolean': ['bool_col'], 'numeric_code': ['numeric'],
                  'dob_column': 'dob_col'})
     metadata_json = json.dumps(metadata)
@@ -319,10 +325,12 @@ def test_get_client():
 
     # test error checking
     temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
-    metadata = ({'name': 'test', 'duplicate_check_columns': ['id'],
+    metadata = ({'name': 'test',
+                 'duplicate_check_columns': ['id'],
                  'categorical_var': ['bool_col', 'numeric'],
                  'time_var': ['dob_col'],
-                 'boolean': ['bool_col'], 'numeric_code': ['numeric']})
+                 'boolean': ['bool_col'], 'numeric_code': ['numeric'],
+                 'dob_column': 'dob_col'})
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
@@ -350,9 +358,9 @@ def test_get_disabilities():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['response'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 10,
-                'exit_stage_val': 20, 'update_stage_val': 30,
-                'type_column': 'type',
-                'response_column': 'response', 'uniqueID': 'pid'}
+                'exit_stage_val': 20, 'type_column': 'type',
+                'response_column': 'response', 'person_enrollment_ID': 'pid'}
+
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -406,7 +414,8 @@ def test_get_employment_education():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'update_stage_val': 3, 'uniqueID': 'id'}
+                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -443,7 +452,8 @@ def test_get_health_dv():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'update_stage_val': 2, 'uniqueID': 'id'}
+                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
@@ -482,7 +492,7 @@ def test_get_income():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['income'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'update_stage_val': 2, 'uniqueID': 'pid',
+                'exit_stage_val': 1, 'person_enrollment_ID': 'pid',
                 'columns_to_take_max': ['income', 'incomeAmount']}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
@@ -526,7 +536,7 @@ def test_get_project():
     temp_csv_file.seek(0)
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
-    metadata = {'name': 'test',
+    metadata = {'name': 'test', 'program_ID': 'pid',
                 'duplicate_check_columns': ['pid', 'name', 'type'],
                 'columns_to_drop': ['years'], 'project_type_column': 'type'}
 
@@ -551,29 +561,195 @@ def test_get_project():
 
 
 def test_merge():
-    # make up all the csv files and metadata files
-    enrollment_df = pd.DataFrame({'personID': [0, 1],
-                                  'person_enrollID': [10, 20],
-                                  'programID': [100, 200]})
-    enrollment_metadata = {'person_enrollment_ID': 'person_enrollID',
-                           'person_ID': 'personID',
-                           'program_ID': 'programID'}
-    enrollment_csv_file = tempfile.NamedTemporaryFile(mode='w')
-    enrollment_df.to_csv(enrollment_csv_file, index=False)
-    enrollment_csv_file.seek(0)
-    enrollment_meta_file = tempfile.NamedTemporaryFile(mode='w')
-    metadata_json = json.dumps(enrollment_metadata)
-    enrollment_meta_file.file.write(metadata_json)
-    enrollment_meta_file.seek(0)
 
-    exit_df = pd.DataFrame({'ppid': [10, 20],
-                            'dest_num': [12, 27]})
-    exit_metadata = {'person_enrollment_ID': 'ppid',
-                     'destination_column': 'dest_num'}
-    exit_csv_file = tempfile.NamedTemporaryFile(mode='w')
-    exit_df.to_csv(exit_csv_file, index=False)
-    exit_csv_file.seek(0)
-    exit_meta_file = tempfile.NamedTemporaryFile(mode='w')
-    metadata_json = json.dumps(exit_metadata)
-    exit_meta_file.file.write(metadata_json)
-    exit_meta_file.seek(0)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        year_str = '2011'
+        paths = {2011: year_str}
+        dir_year = op.join(temp_dir, year_str)
+        os.makedirs(dir_year, exist_ok=True)
+        # make up all the csv files and metadata files
+        enrollment_df = pd.DataFrame({'personID': [1, 2],
+                                      'person_enrollID': [10, 20],
+                                      'programID': [100, 200],
+                                      'groupID': [1000, 2000],
+                                      'entrydate': ['2011-01-13',
+                                                    '2011-06-10']})
+        # print(enrollment_df)
+        enrollment_metadata = {'name': 'enrollment',
+                               'person_enrollment_ID': 'person_enrollID',
+                               'person_ID': 'personID',
+                               'program_ID': 'programID',
+                               'groupID_column': 'groupID',
+                               'duplicate_check_columns': ['personID',
+                                                           'person_enrollID',
+                                                           'programID',
+                                                           'groupID'],
+                               'columns_to_drop': ['years'],
+                               'time_var': ['entrydate']}
+        enrollment_csv_file = op.join(dir_year, 'Enrollment.csv')
+        enrollment_df.to_csv(enrollment_csv_file, index=False)
+        enrollment_meta_file = op.join(dir_year, 'Enrollment.json')
+        with open(enrollment_meta_file, 'w') as outfile:
+            json.dump(enrollment_metadata, outfile)
+
+        exit_df = pd.DataFrame({'ppid': [10, 20],
+                                'dest_num': [12, 27],
+                                'exitdate': ['2011-08-01', '2011-12-21']})
+        exit_metadata = {'name': 'exit', 'person_enrollment_ID': 'ppid',
+                         'destination_column': 'dest_num',
+                         'duplicate_check_columns': ['ppid'],
+                         'columns_to_drop': ['years'],
+                         'time_var': ['exitdate']}
+        exit_csv_file = op.join(dir_year, 'Exit.csv')
+        exit_df.to_csv(exit_csv_file, index=False)
+        exit_meta_file = op.join(dir_year, 'Exit.json')
+        with open(exit_meta_file, 'w') as outfile:
+            json.dump(exit_metadata, outfile)
+
+        client_df = pd.DataFrame({'pid': [1, 2],
+                                  'dob': ['1990-03-13', '1955-08-21'],
+                                  'gender': [0, 1],
+                                  'veteran': [0, 1]})
+        client_metadata = {'name': 'client', 'person_ID': 'pid',
+                           'dob_column': 'dob',
+                           'time_var': ['dob'],
+                           'categorical_var': ['gender', 'veteran'],
+                           'boolean': ['veteran'],
+                           'numeric_code': ['gender'],
+                           'duplicate_check_columns': ['pid']}
+        client_csv_file = op.join(dir_year, 'Client.csv')
+        client_df.to_csv(client_csv_file, index=False)
+        client_meta_file = op.join(dir_year, 'Client.json')
+        with open(client_meta_file, 'w') as outfile:
+            json.dump(client_metadata, outfile)
+
+        disabilities_df = pd.DataFrame({'ppid': [10, 10, 20, 20],
+                                        'stage': [0, 1, 0, 1],
+                                        'type': [5, 5, 5, 5],
+                                        'response': [0, 0, 1, 1]})
+        disabilities_metadata = {'name': 'disabilities',
+                                 'person_enrollment_ID': 'ppid',
+                                 'categorical_var': ['response'],
+                                 'collection_stage_column': 'stage',
+                                 'entry_stage_val': 0, "exit_stage_val": 1,
+                                 'type_column': 'type',
+                                 'response_column': 'response',
+                                 'duplicate_check_columns': ['ppid', 'stage',
+                                                             'type'],
+                                 'columns_to_drop': ['years']}
+
+        disabilities_csv_file = op.join(dir_year, 'Disabilities.csv')
+        disabilities_df.to_csv(disabilities_csv_file, index=False)
+        disabilities_meta_file = op.join(dir_year, 'Disabilities.json')
+        with open(disabilities_meta_file, 'w') as outfile:
+            json.dump(disabilities_metadata, outfile)
+
+        emp_edu_df = pd.DataFrame({'ppid': [10, 10, 20, 20],
+                                   'stage': [0, 1, 0, 1],
+                                   'employed': [0, 0, 0, 1]})
+        emp_edu_metadata = {'name': 'employment_education',
+                            'person_enrollment_ID': 'ppid',
+                            'categorical_var': ['employed'],
+                            'collection_stage_column': 'stage',
+                            'entry_stage_val': 0, "exit_stage_val": 1,
+                            'duplicate_check_columns': ['ppid', 'stage'],
+                            'columns_to_drop': ['years']}
+
+        emp_edu_csv_file = op.join(dir_year, 'EmploymentEducation.csv')
+        emp_edu_df.to_csv(emp_edu_csv_file, index=False)
+        emp_edu_meta_file = op.join(dir_year, 'EmploymentEducation.json')
+        with open(emp_edu_meta_file, 'w') as outfile:
+            json.dump(emp_edu_metadata, outfile)
+
+        health_dv_df = pd.DataFrame({'ppid': [10, 10, 20, 20],
+                                     'stage': [0, 1, 0, 1],
+                                     'health_status': [0, 0, 0, 1]})
+        health_dv_metadata = {'name': 'health_dv',
+                              'person_enrollment_ID': 'ppid',
+                              'categorical_var': ['health_status'],
+                              'collection_stage_column': 'stage',
+                              'entry_stage_val': 0, "exit_stage_val": 1,
+                              'duplicate_check_columns': ['ppid', 'stage'],
+                              'columns_to_drop': ['years']}
+        health_dv_csv_file = op.join(dir_year, 'HealthAndDV.csv')
+        health_dv_df.to_csv(health_dv_csv_file, index=False)
+        health_dv_meta_file = op.join(dir_year, 'HealthAndDV.json')
+        with open(health_dv_meta_file, 'w') as outfile:
+            json.dump(health_dv_metadata, outfile)
+
+        income_df = pd.DataFrame({'ppid': [10, 10, 20, 20],
+                                  'stage': [0, 1, 0, 1],
+                                  'income': [0, 0, 0, 1000]})
+        income_metadata = {'name': 'income', 'person_enrollment_ID': 'ppid',
+                           'categorical_var': ['income'],
+                           'collection_stage_column': 'stage',
+                           'entry_stage_val': 0, "exit_stage_val": 1,
+                           'columns_to_take_max': ['income'],
+                           'duplicate_check_columns': ['ppid', 'stage'],
+                           'columns_to_drop': ['years']}
+
+        income_csv_file = op.join(dir_year, 'IncomeBenefits.csv')
+        income_df.to_csv(income_csv_file, index=False)
+        income_meta_file = op.join(dir_year, 'IncomeBenefits.json')
+        with open(income_meta_file, 'w') as outfile:
+            json.dump(income_metadata, outfile)
+
+        project_df = pd.DataFrame({'pr_id': [100, 200],
+                                   'type': [1, 2]})
+        project_metadata = {'name': 'project', 'program_ID': 'pr_id',
+                            'project_type_column': 'type',
+                            'duplicate_check_columns': ['pr_id'],
+                            'columns_to_drop': ['years']}
+
+        project_csv_file = op.join(dir_year, 'Project.csv')
+        project_df.to_csv(project_csv_file, index=False)
+        project_meta_file = op.join(dir_year, 'Project.json')
+        with open(project_meta_file, 'w') as outfile:
+            json.dump(project_metadata, outfile)
+
+        metadata_files = {'enrollment': enrollment_meta_file,
+                          'exit': exit_meta_file,
+                          'client': client_meta_file,
+                          'disabilities': disabilities_meta_file,
+                          'employment_education': emp_edu_meta_file,
+                          'health_dv': health_dv_meta_file,
+                          'income': income_meta_file,
+                          'project': project_meta_file}
+
+        df = pk.merge_tables(metadata_file_dict=metadata_files,
+                             data_dir=temp_dir, paths=paths, groups=False)
+
+        df_test = pd.DataFrame({'personID': [1, 2],
+                                'person_enrollID': [10, 20],
+                                'programID': [100, 200],
+                                'groupID': [1000, 2000],
+                                'entrydate': pd.to_datetime(['2011-01-13',
+                                                             '2011-06-10']),
+                                'DestinationNumeric': [12., 27.],
+                                'DestinationDescription': ['Staying or living with family, temporary tenure (e.g., room, apartment or house)',
+                                                           'Moved from one HOPWA funded project to HOPWA TH'],
+                                'DestinationGroup': ['Temporary', 'Temporary'],
+                                'DestinationSuccess': ['Other Exit', 'Other Exit'],
+                                'exitdate': pd.to_datetime(['2011-08-01',
+                                                            '2011-12-21']),
+                                'Subsidy': [False, False],
+                                'dob': pd.to_datetime(['1990-03-13',
+                                                       '1955-08-21']),
+                                'gender': [0, 1],
+                                'veteran': [0, 1],
+                                'Physical_entry': [0, 1],
+                                'Physical_exit': [0, 1],
+                                'employed_entry': [0, 0],
+                                'employed_exit': [0, 1],
+                                'health_status_entry': [0, 0],
+                                'health_status_exit': [0, 1],
+                                'income_entry': [0, 0],
+                                'income_exit': [0, 1000],
+                                'ProjectNumeric': [1, 2],
+                                'ProjectType': ['Emergency Shelter',
+                                                'Transitional Housing']})
+
+        # sort because column order is not assured because started with dicts
+        df = df.sort_index(axis=1)
+        df_test = df_test.sort_index(axis=1)
+        pdt.assert_frame_equal(df, df_test)
