@@ -48,36 +48,36 @@ CATEGORICAL_UNKNOWN = [8, 9, 99]
 ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
 # dict of default metadata file names
-metadata_file_defaults = {'enrollment': 'king_enrollment.json',
-                          'exit': 'king_exit.json',
-                          'client': 'king_client.json',
-                          'disabilities': 'king_disabilities.json',
-                          'employment_education': 'king_employment_education.json',
-                          'health_dv': 'king_health_dv.json',
-                          'income': 'king_income.json',
-                          'project': 'king_project.json'}
+METADATA_FILES = {'enrollment': 'king_enrollment.json',
+                  'exit': 'king_exit.json',
+                  'client': 'king_client.json',
+                  'disabilities': 'king_disabilities.json',
+                  'employment_education': 'king_employment_education.json',
+                  'health_dv': 'king_health_dv.json',
+                  'income': 'king_income.json',
+                  'project': 'king_project.json'}
 
-for k, v in metadata_file_defaults.items():
-    metadata_file_defaults[k] = op.join(DATA_PATH, 'metadata', v)
+for k, v in METADATA_FILES.items():
+    METADATA_FILES[k] = op.join(DATA_PATH, 'metadata', v)
 
 file_path_boilerplate = (
     """
-    file_dict : dict or string
+    file_spec : dict or string
         if a dict, keys should be years, values should be full path to files
         if a string, should be the filename of the .csv table and data_dir,
             paths and years parameters are required
 
     data_dir : string
         full path to general data folder (usually puget/data);
-            not required if file_dict is a dictionary
+            not required if file_spec is a dictionary
 
     paths : list
         list of directories inside data_dir to look for csv files in;
-            not required if file_dict is a dictionary
+            not required if file_spec is a dictionary
 
     years : list
         list of years to include, default is to include all years;
-            not required if file_dict is a dictionary
+            not required if file_spec is a dictionary
     """)
 metdata_boilerplate = (
     """
@@ -119,11 +119,11 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
     for path in path_list:
         file_list.append(op.join(data_dir, path, filename))
 
-    file_dict = dict(zip(years, file_list))
-    return file_dict
+    file_spec = dict(zip(years, file_list))
+    return file_spec
 
 
-def read_table(file_dict, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
+def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None, dedup=True):
@@ -168,25 +168,25 @@ def read_table(file_dict, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
     if time_var is None:
         time_var = []
 
-    if not isinstance(file_dict, dict):
+    if not isinstance(file_spec, dict):
         if data_dir is None:
             raise ValueError(
-                'If file_dict is a string, data_dir must be passed')
-        file_dict = std_path_setup(file_dict, data_dir=data_dir, paths=paths)
+                'If file_spec is a string, data_dir must be passed')
+        file_spec = std_path_setup(file_spec, data_dir=data_dir, paths=paths)
     else:
         if data_dir is not None or paths is not None:
             raise ValueError(
-                'If file_dict is a dict, data_dir and paths cannot be passed')
+                'If file_spec is a dict, data_dir and paths cannot be passed')
 
-    file_dict_use = file_dict.copy()
+    file_spec_use = file_spec.copy()
 
     # Start by reading the first file into a DataFrame
-    year, fname = file_dict_use.popitem()
+    year, fname = file_spec_use.popitem()
     df = pd.read_csv(fname, low_memory=False)
     df['years'] = year
 
     # Then, for the rest of the files, append to the DataFrame.
-    for year, fname in file_dict_use.items():
+    for year, fname in file_spec_use.items():
         this_df = pd.read_csv(fname, low_memory=False)
         this_df['years'] = year
         df = df.append(this_df)
@@ -273,7 +273,7 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     return df_wide
 
 
-def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
+def read_entry_exit_table(metadata, file_spec=None, data_dir=None,
                           paths=FILEPATHS, years=None,
                           suffixes=ENTRY_EXIT_SUFFIX):
     """
@@ -313,7 +313,7 @@ def read_entry_exit_table(metadata, file_dict=None, data_dir=None,
         else:
             raise ValueError(k + ' entry must be present in metadata file')
 
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+    df = read_table(file_spec, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
     # Don't use the update stage data:
@@ -340,9 +340,9 @@ def get_metadata_dict(metadata_file):
     return metadata
 
 
-def get_enrollment(groups=True, file_dict=None,
+def get_enrollment(groups=True, file_spec=None,
                    data_dir=KING_DATA, paths=FILEPATHS, years=None,
-                   metadata_file=metadata_file_defaults['enrollment']):
+                   metadata_file=METADATA_FILES['enrollment']):
     """
     Read in the Enrollment tables from King.
 
@@ -363,8 +363,8 @@ def get_enrollment(groups=True, file_dict=None,
     dataframe with rows representing enrollment record of a person per
         enrollment, optionally with people who are not in groups removed
     """
-    if file_dict is None:
-        file_dict = 'Enrollment.csv'
+    if file_spec is None:
+        file_spec = 'Enrollment.csv'
 
     metadata = get_metadata_dict(metadata_file)
     groupID_column = metadata.pop('groupID_column')
@@ -372,7 +372,7 @@ def get_enrollment(groups=True, file_dict=None,
     pid_column = metadata.pop('person_ID')
     prid_column = metadata.pop('program_ID')
 
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+    df = read_table(file_spec, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
     # Now, group by HouseholdID, and only keep the groups where there are
     # more than one ProjectEntryID.
@@ -393,9 +393,8 @@ get_enrollment.__doc__ = get_enrollment.__doc__ % (file_path_boilerplate,
                                                    metdata_boilerplate)
 
 
-def get_exit(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
-             metadata_file=metadata_file_defaults['exit'],
-             df_destination_column='Destination'):
+def get_exit(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+             metadata_file=METADATA_FILES['exit']):
     """
     Read in the Exit tables from King and map Destinations.
 
@@ -405,20 +404,17 @@ def get_exit(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     %s
 
-    df_destination_column : string
-        column containing the numeric destination codes
-
     Returns
     ----------
     dataframe with rows representing exit record of a person per enrollment
     """
-    if file_dict is None:
-        file_dict = 'Exit.csv'
+    if file_spec is None:
+        file_spec = 'Exit.csv'
 
     metadata = get_metadata_dict(metadata_file)
     df_destination_column = metadata.pop('destination_column')
     enid_column = metadata.pop('person_enrollment_ID')
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+    df = read_table(file_spec, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
     df_merge = pu.merge_destination(
@@ -430,8 +426,8 @@ get_exit.__doc__ = get_exit.__doc__ % (file_path_boilerplate,
                                        metdata_boilerplate)
 
 
-def get_client(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
-               metadata_file=metadata_file_defaults['client']):
+def get_client(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+               metadata_file=METADATA_FILES['client']):
     """
     Read in the Client tables from King and map Destinations.
 
@@ -440,18 +436,13 @@ def get_client(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     %s
 
     %s
-        ALSO lists of boolean and numerically coded columns and
-             personalID column
-
-    dob_column: string
-        name of column containing the client date of birth
 
     Returns
     ----------
     dataframe with rows representing demographic information of a person
     """
-    if file_dict is None:
-        file_dict = 'Client.csv'
+    if file_spec is None:
+        file_spec = 'Client.csv'
 
     metadata = get_metadata_dict(metadata_file)
     # Don't want to deduplicate before checking if DOB is sane because the last
@@ -475,7 +466,7 @@ def get_client(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     dob_column = metadata.pop("dob_column")
 
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+    df = read_table(file_spec, data_dir=data_dir, paths=paths,
                     years=years, dedup=False, **metadata)
     df = df.set_index(np.arange(df.shape[0]))
 
@@ -581,9 +572,9 @@ get_client.__doc__ = get_client.__doc__ % (file_path_boilerplate,
                                            metdata_boilerplate)
 
 
-def get_disabilities(file_dict=None,  data_dir=KING_DATA, paths=FILEPATHS,
+def get_disabilities(file_spec=None,  data_dir=KING_DATA, paths=FILEPATHS,
                      years=None,
-                     metadata_file=metadata_file_defaults['disabilities'],
+                     metadata_file=METADATA_FILES['disabilities'],
                      disability_type_file=op.join(DATA_PATH, 'metadata',
                                                   'disability_type.json')):
     """
@@ -596,9 +587,6 @@ def get_disabilities(file_dict=None,  data_dir=KING_DATA, paths=FILEPATHS,
     %s
 
     %s
-        ALSO names of columns containing collection stage, type, response and
-             person_enrollment_IDs and values indicating entry and exit
-             collection stage
 
     disability_type_file : string
         name of json file with mapping between disability numeric codes and
@@ -609,8 +597,8 @@ def get_disabilities(file_dict=None,  data_dir=KING_DATA, paths=FILEPATHS,
     dataframe with rows representing presence of disability types at entry &
         exit of a person per enrollment
     """
-    if file_dict is None:
-        file_dict = 'Disabilities.csv'
+    if file_spec is None:
+        file_spec = 'Disabilities.csv'
 
     metadata = get_metadata_dict(metadata_file)
     extra_metadata = {'type_column': None,
@@ -625,7 +613,7 @@ def get_disabilities(file_dict=None,  data_dir=KING_DATA, paths=FILEPATHS,
     extra_metadata['person_enrollment_ID'] = metadata['person_enrollment_ID']
 
     stage_suffixes = ENTRY_EXIT_SUFFIX
-    df_stage = read_entry_exit_table(metadata, file_dict=file_dict,
+    df_stage = read_entry_exit_table(metadata, file_spec=file_spec,
                                      data_dir=data_dir, paths=paths,
                                      years=years, suffixes=stage_suffixes)
 
@@ -671,9 +659,9 @@ get_disabilities.__doc__ = get_disabilities.__doc__ % (file_path_boilerplate,
                                                        metdata_boilerplate)
 
 
-def get_employment_education(file_dict=None, data_dir=KING_DATA,
+def get_employment_education(file_spec=None, data_dir=KING_DATA,
                              paths=FILEPATHS, years=None,
-                             metadata_file=metadata_file_defaults['employment_education']):
+                             metadata_file=METADATA_FILES['employment_education']):
     """
     Read in the EmploymentEducation tables from King.
 
@@ -682,19 +670,16 @@ def get_employment_education(file_dict=None, data_dir=KING_DATA,
     %s
 
     %s
-        ALSO names of columns containing collection stage and
-            person_enrollment_IDs, and values indicating entry and exit
-            collection stage
 
     Returns
     ----------
     dataframe with rows representing employment and education at entry & exit
               of a person per enrollment
     """
-    if file_dict is None:
-        file_dict = 'EmploymentEducation.csv'
+    if file_spec is None:
+        file_spec = 'EmploymentEducation.csv'
 
-    df_wide = read_entry_exit_table(metadata_file, file_dict=file_dict,
+    df_wide = read_entry_exit_table(metadata_file, file_spec=file_spec,
                                     data_dir=data_dir, paths=paths,
                                     years=years)
 
@@ -704,9 +689,9 @@ get_employment_education.__doc__ = get_employment_education.__doc__ % (
     file_path_boilerplate, metdata_boilerplate)
 
 
-def get_health_dv(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS,
+def get_health_dv(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
                   years=None,
-                  metadata_file=metadata_file_defaults['health_dv']):
+                  metadata_file=METADATA_FILES['health_dv']):
     """
     Read in the HealthAndDV tables from King.
 
@@ -715,19 +700,16 @@ def get_health_dv(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS,
     %s
 
     %s
-        ALSO names of columns containing collection stage and
-            person_enrollment_IDs, and values indicating entry and exit
-            collection stage
 
     Returns
     ----------
     dataframe with rows representing employment and education at entry & exit
               of a person per enrollment
     """
-    if file_dict is None:
-        file_dict = 'HealthAndDV.csv'
+    if file_spec is None:
+        file_spec = 'HealthAndDV.csv'
 
-    df_wide = read_entry_exit_table(metadata_file, file_dict=file_dict,
+    df_wide = read_entry_exit_table(metadata_file, file_spec=file_spec,
                                     data_dir=data_dir, paths=paths,
                                     years=years)
 
@@ -737,8 +719,8 @@ get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
                                                  metdata_boilerplate)
 
 
-def get_income(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
-               metadata_file=metadata_file_defaults['income']):
+def get_income(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+               metadata_file=METADATA_FILES['income']):
     """
     Read in the IncomeBenefits tables from King.
 
@@ -747,18 +729,14 @@ def get_income(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     %s
 
     %s
-        ALSO names of columns containing collection stage and
-            person_enrollment_IDs, and values indicating entry and exit
-            collection stage and list of columns to take max over for income
-            variables
 
     Returns
     ----------
     dataframe with rows representing income at entry & exit of a person per
         enrollment
     """
-    if file_dict is None:
-        file_dict = 'IncomeBenefits.csv'
+    if file_spec is None:
+        file_spec = 'IncomeBenefits.csv'
 
     metadata = get_metadata_dict(metadata_file)
     if 'columns_to_take_max' in metadata:
@@ -769,7 +747,7 @@ def get_income(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     person_enrollment_ID = metadata['person_enrollment_ID']
 
     suffixes = ENTRY_EXIT_SUFFIX
-    df_wide = read_entry_exit_table(metadata, file_dict=file_dict,
+    df_wide = read_entry_exit_table(metadata, file_spec=file_spec,
                                     data_dir=data_dir, paths=paths,
                                     years=years, suffixes=suffixes)
 
@@ -808,8 +786,8 @@ get_income.__doc__ = get_income.__doc__ % (file_path_boilerplate,
                                            metdata_boilerplate)
 
 
-def get_project(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS,
-                years=None, metadata_file=metadata_file_defaults['project'],
+def get_project(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
+                years=None, metadata_file=METADATA_FILES['project'],
                 project_type_file=op.join(DATA_PATH, 'metadata',
                                           'project_type.json')):
     """
@@ -821,20 +799,17 @@ def get_project(file_dict=None, data_dir=KING_DATA, paths=FILEPATHS,
 
     %s
 
-    project_type_column : string
-        column containing the numeric project type codes
-
     Returns
     ----------
     dataframe with rows representing exit record of a person per enrollment
     """
-    if file_dict is None:
-        file_dict = 'Project.csv'
+    if file_spec is None:
+        file_spec = 'Project.csv'
 
     metadata = get_metadata_dict(metadata_file)
     project_type_column = metadata.pop('project_type_column')
     projectID = metadata.pop('program_ID')
-    df = read_table(file_dict, data_dir=data_dir, paths=paths,
+    df = read_table(file_spec, data_dir=data_dir, paths=paths,
                     years=years, **metadata)
 
     # get project_type dict
@@ -857,53 +832,75 @@ get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
                                              metdata_boilerplate)
 
 
-def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
-                 paths=FILEPATHS, file_dict=None, groups=True, years=None):
+def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
+                 paths=FILEPATHS, files=None, groups=True, years=None):
     """ Run all functions that clean up King tables separately, and merge them
         all into the enrollment table, where each row represents the project
         enrollment of an individual.
 
         Parameters
         ----------
+        meta_files: dict
+            dictionary giving names of metadata files for each table type
+            If any table type is missing it is defaulted using METADATA_FILES
+
+        files: dict
+            dictionary giving short data file names for each table type.
+                (these must be combined with data_dir, paths and years to get
+                the full file names)
+            If any table type is missing the file name is defaulted in the
+            respective get_* functions
+
+        data_dir : string
+            full path to general data folder (usually puget/data)
+
+        paths : list
+            list of directories inside data_dir to look for csv files in
+
+        years : list
+            list of years to include, default is to include all years
 
         Returns
         ----------
         dataframe with rows representing the record of a person per
         project enrollment
     """
-    if not isinstance(file_dict, dict):
-        file_dict = {}
+    if not isinstance(files, dict):
+        files = {}
 
     # Get enrollment data
-    enroll = get_enrollment(file_dict=file_dict.get('enrollment', None),
-                            metadata_file=metadata_file_dict['enrollment'],
+    enroll = get_enrollment(file_spec=files.get('enrollment', None),
+                            metadata_file=meta_files.get('enrollment', None),
                             groups=groups, years=years, data_dir=data_dir,
                             paths=paths)
 
-    enrollment_metadata = get_metadata_dict(metadata_file_dict['enrollment'])
+    enrollment_metadata = get_metadata_dict(meta_files.get('enrollment',
+                                            METADATA_FILES['enrollment']))
     enrollment_enid_column = enrollment_metadata['person_enrollment_ID']
     enrollment_pid_column = enrollment_metadata['person_ID']
     enrollment_prid_column = enrollment_metadata['program_ID']
     # print(enroll)
 
     # Merge exit in
-    exit = get_exit(file_dict=file_dict.get('exit', None),
-                    metadata_file=metadata_file_dict['exit'], years=years,
-                    data_dir=data_dir, paths=paths)
-    exit_metadata = get_metadata_dict(metadata_file_dict['exit'])
+    exit_table = get_exit(file_spec=files.get('exit', None),
+                          metadata_file=meta_files.get('exit', None),
+                          years=years, data_dir=data_dir, paths=paths)
+    exit_metadata = get_metadata_dict(meta_files.get('exit',
+                                      METADATA_FILES['exit']))
     exit_ppid_column = exit_metadata['person_enrollment_ID']
 
-    enroll_merge = pd.merge(left=enroll, right=exit, how='left',
+    enroll_merge = pd.merge(left=enroll, right=exit_table, how='left',
                             left_on=enrollment_enid_column,
                             right_on=exit_ppid_column)
     if exit_ppid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(exit_ppid_column, axis=1)
 
     # Merge client in
-    client = get_client(file_dict=file_dict.get('client', None),
-                        metadata_file=metadata_file_dict['client'],
+    client = get_client(file_spec=files.get('client', None),
+                        metadata_file=meta_files.get('client', None),
                         years=years, data_dir=data_dir, paths=paths)
-    client_metadata = get_metadata_dict(metadata_file_dict['client'])
+    client_metadata = get_metadata_dict(meta_files.get('client',
+                                        METADATA_FILES['client']))
     client_pid_column = client_metadata['person_ID']
 
     enroll_merge = pd.merge(left=enroll_merge, right=client, how='left',
@@ -914,13 +911,12 @@ def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(client_pid_column, axis=1)
 
     # Merge disabilities in
-    disabilities = get_disabilities(file_dict=file_dict.get('disabilities',
-                                                            None),
-                                    metadata_file=metadata_file_dict['disabilities'],
+    disabilities = get_disabilities(file_spec=files.get('disabilities', None),
+                                    metadata_file=meta_files.get('disabilities', None),
                                     years=years, data_dir=data_dir,
                                     paths=paths)
-    disabilities_metadata = get_metadata_dict(
-        metadata_file_dict['disabilities'])
+    disabilities_metadata = get_metadata_dict(meta_files.get('disabilities',
+                                              METADATA_FILES['disabilities']))
     disabilities_ppid_column = disabilities_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(disabilities, how='left',
                                       left_on=enrollment_enid_column,
@@ -930,11 +926,12 @@ def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(disabilities_ppid_column, axis=1)
 
     # Merge employment_education in
-    emp_edu = get_employment_education(file_dict=file_dict.get('employment_education', None),
-                                       metadata_file=metadata_file_dict['employment_education'],
+    emp_edu = get_employment_education(file_spec=files.get('employment_education', None),
+                                       metadata_file=meta_files.get('employment_education', None),
                                        years=years, data_dir=data_dir,
                                        paths=paths)
-    emp_edu_metadata = get_metadata_dict(metadata_file_dict['employment_education'])
+    emp_edu_metadata = get_metadata_dict(meta_files.get('employment_education',
+                                         METADATA_FILES['employment_education']))
     emp_edu_ppid_column = emp_edu_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(emp_edu, how='left',
                                       left_on=enrollment_enid_column,
@@ -944,10 +941,11 @@ def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(emp_edu_ppid_column, axis=1)
 
     # Merge health in
-    health_dv = get_health_dv(file_dict=file_dict.get('health_dv', None),
-                              metadata_file=metadata_file_dict['health_dv'],
+    health_dv = get_health_dv(file_spec=files.get('health_dv', None),
+                              metadata_file=meta_files.get('health_dv', None),
                               years=years, data_dir=data_dir, paths=paths)
-    health_dv_metadata = get_metadata_dict(metadata_file_dict['health_dv'])
+    health_dv_metadata = get_metadata_dict(meta_files.get('health_dv',
+                                           METADATA_FILES['health_dv']))
     health_dv_ppid_column = health_dv_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(health_dv, how='left',
                                       left_on=enrollment_enid_column,
@@ -957,10 +955,11 @@ def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(health_dv_ppid_column, axis=1)
 
     # Merge income in
-    income = get_income(file_dict=file_dict.get('income', None),
-                        metadata_file=metadata_file_dict['income'],
+    income = get_income(file_spec=files.get('income', None),
+                        metadata_file=meta_files.get('income', None),
                         years=years, data_dir=data_dir, paths=paths)
-    income_metadata = get_metadata_dict(metadata_file_dict['income'])
+    income_metadata = get_metadata_dict(meta_files.get('income',
+                                        METADATA_FILES['income']))
     income_ppid_column = income_metadata['person_enrollment_ID']
     enroll_merge = enroll_merge.merge(income, how='left',
                                       left_on=enrollment_enid_column,
@@ -970,10 +969,11 @@ def merge_tables(metadata_file_dict=metadata_file_defaults, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(health_dv_ppid_column, axis=1)
 
     # Merge project in
-    project = get_project(file_dict=file_dict.get('project', None),
-                          metadata_file=metadata_file_dict['project'],
+    project = get_project(file_spec=files.get('project', None),
+                          metadata_file=meta_files.get('project', None),
                           years=years, data_dir=data_dir, paths=paths)
-    project_metadata = get_metadata_dict(metadata_file_dict['project'])
+    project_metadata = get_metadata_dict(meta_files.get('project',
+                                         METADATA_FILES['project']))
     project_prid_column = project_metadata['program_ID']
     enroll_merge = enroll_merge.merge(project, how='left',
                                       left_on=enrollment_prid_column,

@@ -20,31 +20,31 @@ def test_std_path_setup():
     # test with one year
     years = 2012
 
-    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+    file_spec = pk.std_path_setup(filename, data_dir=data_dir,
                                   paths=file_paths, years=years)
     test_dict = {2012: op.join(data_dir, file_paths[2012], filename)}
 
-    assert_equal(file_dict, test_dict)
+    assert_equal(file_spec, test_dict)
 
     # test with limited years
     years = [2012, 2013]
 
-    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+    file_spec = pk.std_path_setup(filename, data_dir=data_dir,
                                   paths=file_paths, years=years)
     test_dict = {2012: op.join(data_dir, file_paths[2012], filename),
                  2013: op.join(data_dir, file_paths[2013], filename)}
 
-    assert_equal(file_dict, test_dict)
+    assert_equal(file_spec, test_dict)
 
     # test with all years
-    file_dict = pk.std_path_setup(filename, data_dir=data_dir,
+    file_spec = pk.std_path_setup(filename, data_dir=data_dir,
                                   paths=file_paths)
     test_dict = {2011: op.join(data_dir, file_paths[2011], filename),
                  2012: op.join(data_dir, file_paths[2012], filename),
                  2013: op.join(data_dir, file_paths[2013], filename),
                  2014: op.join(data_dir, file_paths[2014], filename)}
 
-    assert_equal(file_dict, test_dict)
+    assert_equal(file_spec, test_dict)
 
 
 def test_read_table():
@@ -58,8 +58,8 @@ def test_read_table():
     df.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
-    df = pk.read_table(file_dict, data_dir=None, paths=None,
+    file_spec = {2011: temp_csv_file.name}
+    df = pk.read_table(file_spec, data_dir=None, paths=None,
                        columns_to_drop=['drop1'], categorical_var=['categ1'],
                        time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
@@ -86,7 +86,7 @@ def test_read_table():
     temp_csv_file.close()
 
     # test error checking
-    assert_raises(ValueError, pk.read_table, file_dict, data_dir=pk.KING_DATA)
+    assert_raises(ValueError, pk.read_table, file_spec, data_dir=pk.KING_DATA)
 
     # test error checking
     assert_raises(ValueError, pk.read_table, 'test', data_dir=None, paths=None)
@@ -105,15 +105,16 @@ def test_read_entry_exit():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+                'exit_stage_val': 1, 'update_stage_val': 2,
+                'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.read_entry_exit_table(file_dict=file_dict, data_dir=None,
+    df = pk.read_entry_exit_table(file_spec=file_spec, data_dir=None,
                                   paths=None,
                                   metadata=temp_meta_file.name)
 
@@ -135,7 +136,7 @@ def test_read_entry_exit():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.read_entry_exit_table, file_dict=file_dict,
+    assert_raises(ValueError, pk.read_entry_exit_table, file_spec=file_spec,
                   metadata=temp_meta_file2.name)
 
     temp_csv_file.close()
@@ -168,10 +169,10 @@ def test_get_enrollment():
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
     # first try with groups=True (default)
-    df = pk.get_enrollment(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_enrollment(file_spec=file_spec, data_dir=None, paths=None,
                            metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1], 'time1':
@@ -182,7 +183,7 @@ def test_get_enrollment():
     pdt.assert_frame_equal(df, df_test)
 
     # try again with groups=False
-    df = pk.get_enrollment(groups=False, file_dict=file_dict, data_dir=None,
+    df = pk.get_enrollment(groups=False, file_spec=file_spec, data_dir=None,
                            paths=None, metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1, 2],
@@ -216,9 +217,9 @@ def test_get_exit():
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_exit(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_exit(file_spec=file_spec, data_dir=None, paths=None,
                      metadata_file=temp_meta_file.name)
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
@@ -295,7 +296,7 @@ def test_get_client():
     temp_csv_file2.seek(0)
 
     years = [2011, 2013]
-    file_dict = dict(zip(years, [temp_csv_file1.name, temp_csv_file2.name]))
+    file_spec = dict(zip(years, [temp_csv_file1.name, temp_csv_file2.name]))
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'person_ID': 'id',
@@ -309,7 +310,7 @@ def test_get_client():
     temp_meta_file.seek(0)
 
     # get path & filenames
-    df = pk.get_client(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_client(file_spec=file_spec, data_dir=None, paths=None,
                        years=years, metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
@@ -335,7 +336,7 @@ def test_get_client():
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
     assert_raises(ValueError, pk.get_client,
-                  file_dict=file_dict, data_dir=None, paths=None,
+                  file_spec=file_spec, data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
     temp_csv_file1.close()
@@ -358,16 +359,17 @@ def test_get_disabilities():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['response'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 10,
-                'exit_stage_val': 20, 'type_column': 'type',
-                'response_column': 'response', 'person_enrollment_ID': 'pid'}
+                'exit_stage_val': 20, 'update_stage_val': 30,
+                'type_column': 'type', 'response_column': 'response',
+                'person_enrollment_ID': 'pid'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_disabilities(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_disabilities(file_spec=file_spec, data_dir=None, paths=None,
                              metadata_file=temp_meta_file.name)
 
     type_dict = {5: 'Physical', 6: 'Developmental', 7: 'ChronicHealth',
@@ -392,7 +394,7 @@ def test_get_disabilities():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.get_disabilities, file_dict=file_dict,
+    assert_raises(ValueError, pk.get_disabilities, file_spec=file_spec,
                   data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
@@ -414,15 +416,16 @@ def test_get_employment_education():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+                'exit_stage_val': 1, 'update_stage_val': 2,
+                'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_employment_education(file_dict=file_dict, data_dir=None,
+    df = pk.get_employment_education(file_spec=file_spec, data_dir=None,
                                      paths=None,
                                      metadata_file=temp_meta_file.name)
 
@@ -452,15 +455,16 @@ def test_get_health_dv():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'person_enrollment_ID': 'id'}
+                'exit_stage_val': 1, 'update_stage_val': 2,
+                'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_health_dv(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_health_dv(file_spec=file_spec, data_dir=None, paths=None,
                           metadata_file=temp_meta_file.name)
 
     # make sure values are floats
@@ -492,15 +496,16 @@ def test_get_income():
                 'columns_to_drop': ['years'],
                 'categorical_var': ['income'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
-                'exit_stage_val': 1, 'person_enrollment_ID': 'pid',
+                'exit_stage_val': 1, 'update_stage_val': 2,
+                'person_enrollment_ID': 'pid',
                 'columns_to_take_max': ['income', 'incomeAmount']}
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_income(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_income(file_spec=file_spec, data_dir=None, paths=None,
                        metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [11, 12],
@@ -519,7 +524,7 @@ def test_get_income():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pk.get_income, file_dict=file_dict,
+    assert_raises(ValueError, pk.get_income, file_spec=file_spec,
                   data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
@@ -544,9 +549,9 @@ def test_get_project():
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
 
-    file_dict = {2011: temp_csv_file.name}
+    file_spec = {2011: temp_csv_file.name}
 
-    df = pk.get_project(file_dict=file_dict, data_dir=None, paths=None,
+    df = pk.get_project(file_spec=file_spec, data_dir=None, paths=None,
                         metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
@@ -632,7 +637,7 @@ def test_merge():
                                  'categorical_var': ['response'],
                                  'collection_stage_column': 'stage',
                                  'entry_stage_val': 0, "exit_stage_val": 1,
-                                 'type_column': 'type',
+                                 'update_stage_val': 2, 'type_column': 'type',
                                  'response_column': 'response',
                                  'duplicate_check_columns': ['ppid', 'stage',
                                                              'type'],
@@ -652,6 +657,7 @@ def test_merge():
                             'categorical_var': ['employed'],
                             'collection_stage_column': 'stage',
                             'entry_stage_val': 0, "exit_stage_val": 1,
+                            'update_stage_val': 2,
                             'duplicate_check_columns': ['ppid', 'stage'],
                             'columns_to_drop': ['years']}
 
@@ -668,7 +674,8 @@ def test_merge():
                               'person_enrollment_ID': 'ppid',
                               'categorical_var': ['health_status'],
                               'collection_stage_column': 'stage',
-                              'entry_stage_val': 0, "exit_stage_val": 1,
+                              'entry_stage_val': 0, 'exit_stage_val': 1,
+                              'update_stage_val': 2,
                               'duplicate_check_columns': ['ppid', 'stage'],
                               'columns_to_drop': ['years']}
         health_dv_csv_file = op.join(dir_year, 'HealthAndDV.csv')
@@ -683,7 +690,8 @@ def test_merge():
         income_metadata = {'name': 'income', 'person_enrollment_ID': 'ppid',
                            'categorical_var': ['income'],
                            'collection_stage_column': 'stage',
-                           'entry_stage_val': 0, "exit_stage_val": 1,
+                           'entry_stage_val': 0, 'exit_stage_val': 1,
+                           'update_stage_val': 2,
                            'columns_to_take_max': ['income'],
                            'duplicate_check_columns': ['ppid', 'stage'],
                            'columns_to_drop': ['years']}
@@ -716,7 +724,7 @@ def test_merge():
                           'income': income_meta_file,
                           'project': project_meta_file}
 
-        df = pk.merge_tables(metadata_file_dict=metadata_files,
+        df = pk.merge_tables(meta_files=metadata_files,
                              data_dir=temp_dir, paths=paths, groups=False)
 
         df_test = pd.DataFrame({'personID': [1, 2],
@@ -729,7 +737,8 @@ def test_merge():
                                 'DestinationDescription': ['Staying or living with family, temporary tenure (e.g., room, apartment or house)',
                                                            'Moved from one HOPWA funded project to HOPWA TH'],
                                 'DestinationGroup': ['Temporary', 'Temporary'],
-                                'DestinationSuccess': ['Other Exit', 'Other Exit'],
+                                'DestinationSuccess': ['Other Exit',
+                                                       'Other Exit'],
                                 'exitdate': pd.to_datetime(['2011-08-01',
                                                             '2011-12-21']),
                                 'Subsidy': [False, False],
