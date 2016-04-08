@@ -72,7 +72,7 @@ def test_cluster_by_time():
     true_T = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     npt.assert_equal(T, true_T)
 
-    # The first test-case usese only one time variable to establish linkage:
+    # The first test-case uses only one time variable to establish linkage:
     df1_out = cluster.cluster(df1, 'individual_var', time_var=['time_var1'])
     true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
                                                     1, 200, 3, 100],
@@ -127,3 +127,5 @@ def test_cluster_by_time():
                                                              '2001-01-13',
                                                              '2003-06-10']),
                                  'cluster': [1, 1, 1, 1, 1, 1, 1, 1]})
+    pdt.assert_frame_equal(df1_out.sort_index(axis=1),
+                           true_df1_out.sort_index(axis=1))
