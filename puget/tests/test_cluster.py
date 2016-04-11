@@ -181,7 +181,7 @@ def test_cluster_w_both():
 def test_cluster_w_nulls():
     df1 = pd.DataFrame({'individual_var': [1, 200, 3, 100, 1, 200, 30, 1000],
                         'group_var': [1, 1, np.nan, 5, 1, 1, 3, 3],
-                        'time_var1': pd.to_datetime(['2001-01-13',
+                        'time_var1': pd.to_datetime([np.nan,
                                                      '2001-01-13',
                                                      '1999-06-10',
                                                      '1999-06-10',
@@ -200,10 +200,11 @@ def test_cluster_w_nulls():
 
     df1_out = cluster.cluster(df1, 'individual_var', time_var=['time_var1'],
                               group_var='group_var')
+
     true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
                                                     1, 200, 30, 1000],
                                  'group_var': [1, 1, np.nan, 5, 1, 1, 3, 3],
-                                 'time_var1': pd.to_datetime(['2001-01-13',
+                                 'time_var1': pd.to_datetime([np.nan,
                                                               '2001-01-13',
                                                               '1999-06-10',
                                                               '1999-06-10',

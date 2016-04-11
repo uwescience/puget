@@ -79,11 +79,6 @@ def time_co_occurrence(df, individual_var, time_var, time_unit='ns',
         How many of the time-unit is still considered "co-occurrence"?
         (default: 0).
     """
-    # Filter to non-null on both variable:
-    df = df[pd.notnull(df[individual_var])]
-    for tv in time_var:
-        df = df[pd.notnull(df[tv])]
-
     unique_individuals = df[individual_var].unique()
     if T is None:
         T = np.zeros((unique_individuals.shape[0],
@@ -95,11 +90,12 @@ def time_co_occurrence(df, individual_var, time_var, time_unit='ns',
 
     # We'll identify differences as things smaller than this:
     dt0 = np.timedelta64(time_delta, time_unit)
-
     for tv in time_var:
         df[tv]
         # Broadcast and get pairwise time-differences:
         diff = np.array(df[tv])[:, None] - np.array(df[tv])[:, None].T
+        # Anything larger than the time_delta would do here:
+        diff[pd.isnull(diff)] = np.timedelta64(time_delta + 1, 'ns')
         idx = np.where(np.abs(diff) <= dt0)
         rows = [mapping[ii] for ii in df['individual_var'][idx[0]]]
         cols = [mapping[ii] for ii in df['individual_var'][idx[1]]]
@@ -130,12 +126,6 @@ def cluster(df, individual_var, group_var=None, time_var=None, time_unit='ns',
     time_delta : float or int
 
     """
-    # Filter to non-null client_key and non-null group_key
-    df = df[pd.notnull(df[individual_var])]
-
-    if group_var is not None:
-        df = df[pd.notnull(df[group_var])]
-
     unique_individuals = df[individual_var].unique()
 
     T = np.zeros((unique_individuals.shape[0],
