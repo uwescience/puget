@@ -1,5 +1,7 @@
 {
 "name":"exit",
+"person_enrollment_ID":"ProjectEntryID",
+"destination_column":"Destination",
 "duplicate_check_columns":["ProjectEntryID"],
 "columns_to_drop":["ExitID","PersonalID", "OtherDestination",
                    "AssessmentDisposition", "OtherDisposition",

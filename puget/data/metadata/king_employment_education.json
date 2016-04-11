@@ -1,5 +1,6 @@
 {
 "name":"employment_education",
+"person_enrollment_ID":"ProjectEntryID",
 "duplicate_check_columns":["ProjectEntryID", "Employed", "DataCollectionStage"],
 "columns_to_drop":["EmploymentEducationID","PersonalID", "InformationDate",
                    "LastGradeCompleted", "SchoolStatus", "EmploymentType",
@@ -7,6 +8,5 @@
                    "UserID", "DateDeleted", "ExportID", "years"],
 "categorical_var":["Employed"],
 "collection_stage_column":"DataCollectionStage",
-"entry_stage_val":1, "exit_stage_val":3, "update_stage_val": 2,
-"uniqueID":["ProjectEntryID"]
+"entry_stage_val":1, "exit_stage_val":3, "update_stage_val": 2
 }
