@@ -768,19 +768,18 @@ def get_income(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     gb = df_wide.groupby(person_enrollment_ID)
     for index, tpl in enumerate(gb):
         name, group = tpl
+        if len(group) == 1:
+            continue
+
         update_dict = {}
         for col in maximize_cols:
             if col in group.columns:
-                update_dict[col] = [group[col].max()]
-        for col in non_max_cols:
-            update_dict[col] = group[col].iloc[0]
-        this_df = pd.DataFrame(data=update_dict, index=[index])
-        if index == 0:
-            new_df = this_df
-        else:
-            new_df = new_df.append(this_df)
+                max_val = group[col].max()
+                row_index = df_wide[df_wide[person_enrollment_ID] == name].index.tolist()
+                df_wide.set_value(row_index[0], col, max_val)
 
-    return new_df
+    df_wide = df_wide.drop_duplicates([person_enrollment_ID])
+    return df_wide
 
 get_income.__doc__ = get_income.__doc__ % (file_path_boilerplate,
                                            metdata_boilerplate)
@@ -820,6 +819,11 @@ def get_project(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
     map_df = pd.DataFrame(columns=['ProjectNumeric'],
                           data=list(mapping_dict.keys()))
     map_df['ProjectType'] = list(mapping_dict.values())
+
+    if project_type_column == 'ProjectType':
+        df = df.rename(index=str,
+                       columns={project_type_column: 'ProjectTypeNum'})
+        project_type_column = 'ProjectTypeNum'
 
     df_merge = pd.merge(left=df, right=map_df, how='left',
                         left_on=project_type_column,
@@ -873,7 +877,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                             metadata_file=meta_files.get('enrollment', None),
                             groups=groups, years=years, data_dir=data_dir,
                             paths=paths)
-
+    print('enroll n_rows:', len(enroll))
     enrollment_metadata = get_metadata_dict(meta_files.get('enrollment',
                                             METADATA_FILES['enrollment']))
     enrollment_enid_column = enrollment_metadata['person_enrollment_ID']
@@ -885,6 +889,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     exit_table = get_exit(file_spec=files.get('exit', None),
                           metadata_file=meta_files.get('exit', None),
                           years=years, data_dir=data_dir, paths=paths)
+    print('exit n_rows:', len(exit_table))
     exit_metadata = get_metadata_dict(meta_files.get('exit',
                                       METADATA_FILES['exit']))
     exit_ppid_column = exit_metadata['person_enrollment_ID']
@@ -901,6 +906,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     client = get_client(file_spec=files.get('client', None),
                         metadata_file=meta_files.get('client', None),
                         years=years, data_dir=data_dir, paths=paths)
+    print('client n_rows:', len(client))
     client_metadata = get_metadata_dict(meta_files.get('client',
                                         METADATA_FILES['client']))
     client_pid_column = client_metadata['person_ID']
@@ -918,6 +924,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                     metadata_file=meta_files.get('disabilities', None),
                                     years=years, data_dir=data_dir,
                                     paths=paths)
+    print('disabilities n_rows:', len(disabilities))
     disabilities_metadata = get_metadata_dict(meta_files.get('disabilities',
                                               METADATA_FILES['disabilities']))
     disabilities_ppid_column = disabilities_metadata['person_enrollment_ID']
@@ -934,6 +941,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
                                        metadata_file=meta_files.get('employment_education', None),
                                        years=years, data_dir=data_dir,
                                        paths=paths)
+    print('emp_edu n_rows:', len(emp_edu))
     emp_edu_metadata = get_metadata_dict(meta_files.get('employment_education',
                                          METADATA_FILES['employment_education']))
     emp_edu_ppid_column = emp_edu_metadata['person_enrollment_ID']
@@ -949,6 +957,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     health_dv = get_health_dv(file_spec=files.get('health_dv', None),
                               metadata_file=meta_files.get('health_dv', None),
                               years=years, data_dir=data_dir, paths=paths)
+    print('health_dv n_rows:', len(health_dv))
     health_dv_metadata = get_metadata_dict(meta_files.get('health_dv',
                                            METADATA_FILES['health_dv']))
     health_dv_ppid_column = health_dv_metadata['person_enrollment_ID']
@@ -964,6 +973,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     income = get_income(file_spec=files.get('income', None),
                         metadata_file=meta_files.get('income', None),
                         years=years, data_dir=data_dir, paths=paths)
+    print('income n_rows:', len(income))
     income_metadata = get_metadata_dict(meta_files.get('income',
                                         METADATA_FILES['income']))
     income_ppid_column = income_metadata['person_enrollment_ID']
@@ -979,6 +989,7 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     project = get_project(file_spec=files.get('project', None),
                           metadata_file=meta_files.get('project', None),
                           years=years, data_dir=data_dir, paths=paths)
+    print('project n_rows:', len(project))
     project_metadata = get_metadata_dict(meta_files.get('project',
                                          METADATA_FILES['project']))
     project_prid_column = project_metadata['program_ID']

@@ -513,6 +513,11 @@ def test_get_income():
                             'income_exit': [1.0, 1.0],
                             'incomeAmount_entry': [8, 6],
                             'incomeAmount_exit': [12, 3]})
+    # Have to change the index to match the one we de-duplicated
+    df_test.index = pd.Int64Index([0, 2])
+    # sort because column order is not assured because started with dicts
+    df = df.sort_index(axis=1)
+    df_test = df_test.sort_index(axis=1)
 
     pdt.assert_frame_equal(df, df_test)
 
@@ -536,14 +541,15 @@ def test_get_income():
 def test_get_project():
     temp_csv_file = tempfile.NamedTemporaryFile(mode='w')
     df_init = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
-                            'type': [1, 13]})
+                            'ProjectType': [1, 13]})
     df_init.to_csv(temp_csv_file, index=False)
     temp_csv_file.seek(0)
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = {'name': 'test', 'program_ID': 'pid',
-                'duplicate_check_columns': ['pid', 'name', 'type'],
-                'columns_to_drop': ['years'], 'project_type_column': 'type'}
+                'duplicate_check_columns': ['pid', 'name', 'ProjectType'],
+                'columns_to_drop': ['years'],
+                'project_type_column': 'ProjectType'}
 
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
