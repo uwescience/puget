@@ -97,8 +97,8 @@ def time_co_occurrence(df, individual_var, time_var, time_unit='ns',
         # Anything larger than the time_delta would do here:
         diff[pd.isnull(diff)] = np.timedelta64(time_delta + 1, 'ns')
         idx = np.where(np.abs(diff) <= dt0)
-        rows = [mapping[ii] for ii in df['individual_var'][idx[0]]]
-        cols = [mapping[ii] for ii in df['individual_var'][idx[1]]]
+        rows = [mapping[ii] for ii in df[individual_var][idx[0]]]
+        cols = [mapping[ii] for ii in df[individual_var][idx[1]]]
         # Increment the co-occurence matrix where relevant:
         T[rows, cols] = T[rows, cols] + 1
 
