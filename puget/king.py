@@ -191,9 +191,15 @@ def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
         this_df['years'] = year
         df = df.append(this_df)
 
+    # Sometimes, column headers can have the unicode 'zero width no-break space
+    # character' (http://www.fileformat.info/info/unicode/char/FEFF/index.htm)
+    # appended to them (because, why not?). We eliminate that here:
+    for col in df.columns:
+        if col.startswith('\ufeff'):
+            df.rename(columns={col: col[1:]}, inplace=True)
+
     # Drop unnecessary columns
     df = df.drop(columns_to_drop, axis=1)
-
     if dedup:
         if duplicate_check_columns is None:
             warnings.warn('dedup is True but duplicate_check_columns is ' +
