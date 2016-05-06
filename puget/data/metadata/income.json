@@ -29,7 +29,7 @@
                    "NoStateHealthInsReason", "HIVAIDSAssistance",
                    "NoHIVAIDSAssistanceReason", "ADAP","NoADAPReason",
                    "DateCreated", "DateUpdated",
-                   "UserID", "DateDeleted", "ExportID", "years"],
+                   "UserID", "DateDeleted", "ExportID"],
 "categorical_var":["IncomeFromAnySource", "Earned", "TANF", "GA",
                    "ChildSupport", "BenefitsFromAnySource", "SNAP", "WIC",
                    "TANFChildCare", "RentalAssistanceOngoing",

@@ -1,29 +1,28 @@
 """
-Functions specific to data from King County HMIS extraction.
+Functions specific to raw extract data from HMIS.
 
-King County data is provided in the following format:
+The raw data is provided in the following format:
+    (king data is divided by year;
+    for pierce & snohomish all years are in one folder)
 
-    data/king/2011_CSV_4_6-1-15
-             /2012_CSV_4_6-1-15
-             /2013_CSV_4_6-2-15
-             /2014_CSV_4_6-1-15/Affiliation.csv
-                                Client.csv
-                                Disabilities.csv
-                                EmploymentEducation.csv
-                                Enrollment_families.csv
-                                Enrollment.csv
-                                EnrollmentCoC.csv
-                                Exit.csv
-                                Export.csv
-                                Funder.csv
-                                HealthAndDV.csv
-                                IncomeBenefits.csv
-                                Inventory.csv
-                                Organization.csv
-                                Project.csv
-                                ProjectCoC.csv
-                                Services.csv
-                                Site.csv
+    data/*county*/*year*/Affiliation.csv
+                         Client.csv
+                         Disabilities.csv
+                         EmploymentEducation.csv
+                         Enrollment_families.csv
+                         Enrollment.csv
+                         EnrollmentCoC.csv
+                         Exit.csv
+                         Export.csv
+                         Funder.csv
+                         HealthAndDV.csv
+                         IncomeBenefits.csv
+                         Inventory.csv
+                         Organization.csv
+                         Project.csv
+                         ProjectCoC.csv
+                         Services.csv
+                         Site.csv
 """
 
 import pandas as pd
@@ -35,11 +34,10 @@ import puget.utils as pu
 import warnings
 
 from puget.data import DATA_PATH
-KING_DATA = op.join(DATA_PATH, 'king')
 
 #  Paths of csvs
-FILEPATHS = {2011: '2011_CSV_4_6-1-15', 2012: '2012_CSV_4_6-1-15',
-             2013: '2013_CSV_4_6-2-15', 2014: '2014_CSV_4_6-1-15'}
+COUNTY_FOLDERS = {'king': [str(s) for s in range(2012, 2017)],
+                  'pierce': ['2012_2016'], 'snohomish': ['2012_2016']}
 
 # these values translate to unknown data for various reasons. Treat as NANs
 CATEGORICAL_UNKNOWN = [8, 9, 99]
@@ -48,14 +46,14 @@ CATEGORICAL_UNKNOWN = [8, 9, 99]
 ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
 # dict of default metadata file names
-METADATA_FILES = {'enrollment': 'king_enrollment.json',
-                  'exit': 'king_exit.json',
-                  'client': 'king_client.json',
-                  'disabilities': 'king_disabilities.json',
-                  'employment_education': 'king_employment_education.json',
-                  'health_dv': 'king_health_dv.json',
-                  'income': 'king_income.json',
-                  'project': 'king_project.json'}
+METADATA_FILES = {'enrollment': 'enrollment.json',
+                  'exit': 'exit.json',
+                  'client': 'client.json',
+                  'disabilities': 'disabilities.json',
+                  'employment_education': 'employment_education.json',
+                  'health_dv': 'health_dv.json',
+                  'income': 'income.json',
+                  'project': 'project.json'}
 
 for k, v in METADATA_FILES.items():
     METADATA_FILES[k] = op.join(DATA_PATH, 'metadata', v)
@@ -63,22 +61,19 @@ for k, v in METADATA_FILES.items():
 file_path_boilerplate = (
     """
     file_spec : dict or string
-        if a dict, keys should be years, values should be full path to files
-        if a string, should be the filename of the .csv table and data_dir,
-            paths and years parameters are required
+        if a dict, keys should be paths, values should be full path to files
+        if a string, should be the filename of the .csv table and data_dir &
+            paths parameters are required
 
     data_dir : string
-        full path to general data folder (usually puget/data);
+        full path to general data folder (usually puget/data/*county*);
             not required if file_spec is a dictionary
 
     paths : list
         list of directories inside data_dir to look for csv files in;
             not required if file_spec is a dictionary
-
-    years : list
-        list of years to include, default is to include all years;
-            not required if file_spec is a dictionary
     """)
+
 metdata_boilerplate = (
     """
     metadata_file : string
@@ -87,7 +82,7 @@ metdata_boilerplate = (
     """)
 
 
-def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
+def std_path_setup(filename, data_dir, paths):
     """
     Setup filenames for read_table assuming standard data directory structure.
 
@@ -97,38 +92,29 @@ def std_path_setup(filename, data_dir=None, paths=FILEPATHS, years=None):
         This should be the filename of the .csv table
 
     data_dir : string
-        full path to general data folder (usually puget/data)
+        full path to general data folder (usually puget/data/*county*)
 
     paths : list
         list of directories inside data_dir to look for csv files in
 
-    years : list
-        list of years to include, default is to include all years
-
     Returns
     ----------
-    dict with key of years, value of filenames for all included years
+    dict with key of paths, value of filenames for all included folders
     """
-    if years is None:
-        years = paths.keys()
-    if isinstance(years, (int, float)):
-        years = [years]
-
-    path_list = [paths[y] for y in years]
     file_list = []
-    for path in path_list:
-        file_list.append(op.join(data_dir, path, filename))
+    for p in paths:
+        file_list.append(op.join(data_dir, p, filename))
 
-    file_spec = dict(zip(years, file_list))
+    file_spec = dict(zip(paths, file_list))
     return file_spec
 
 
-def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
+def read_table(file_spec, county=None, data_dir=None, paths=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None, dedup=True):
     """
-    Read in any .csv table from multiple years in the King data.
+    Read in any .csv table from multiple folders in the raw data.
 
     Parameters
     ----------
@@ -152,14 +138,14 @@ def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
     duplicate_check_columns : list
         list of columns to conside in deduplication.
           Generally, duplicate rows may happen when the same record is
-          registered across the .csv files for each year.
+          registered across the .csv files for each folder.
 
     dedup: boolean
         flag to turn on/off deduplication. Defaults to True
 
     Returns
     ----------
-    dataframe of a csv tables from all included years
+    dataframe of a csv tables from all included folders
     """
     if columns_to_drop is None:
         columns_to_drop = []
@@ -170,9 +156,19 @@ def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
 
     if not isinstance(file_spec, dict):
         if data_dir is None:
-            raise ValueError(
-                'If file_spec is a string, data_dir must be passed')
-        file_spec = std_path_setup(file_spec, data_dir=data_dir, paths=paths)
+            if county is None:
+                raise ValueError('If file_spec is a string, data_dir or ' +
+                                 'county must be passed')
+            else:
+                data_dir = op.join(DATA_PATH, county)
+        if paths is None:
+            if county is None:
+                raise ValueError('If file_spec is a string, paths or county ' +
+                                 'must be passed')
+            else:
+                paths = COUNTY_FOLDERS[county]
+
+        file_spec = std_path_setup(file_spec, data_dir, paths)
     else:
         if data_dir is not None or paths is not None:
             raise ValueError(
@@ -181,14 +177,12 @@ def read_table(file_spec, data_dir=DATA_PATH, paths=FILEPATHS, years=None,
     file_spec_use = file_spec.copy()
 
     # Start by reading the first file into a DataFrame
-    year, fname = file_spec_use.popitem()
+    path, fname = file_spec_use.popitem()
     df = pd.read_csv(fname, low_memory=False)
-    df['years'] = year
 
     # Then, for the rest of the files, append to the DataFrame.
-    for year, fname in file_spec_use.items():
+    for path, fname in file_spec_use.items():
         this_df = pd.read_csv(fname, low_memory=False)
-        this_df['years'] = year
         df = df.append(this_df)
 
     # Sometimes, column headers can have the unicode 'zero width no-break space
@@ -279,9 +273,8 @@ def split_rows_to_columns(df, category_column, category_suffix, merge_columns):
     return df_wide
 
 
-def read_entry_exit_table(metadata, file_spec=None, data_dir=None,
-                          paths=FILEPATHS, years=None,
-                          suffixes=ENTRY_EXIT_SUFFIX):
+def read_entry_exit_table(metadata, county=None, file_spec=None, data_dir=None,
+                          paths=None, suffixes=ENTRY_EXIT_SUFFIX):
     """
     Read in tables with entry & exit values, convert entry & exit rows to
     columns
@@ -319,8 +312,8 @@ def read_entry_exit_table(metadata, file_spec=None, data_dir=None,
         else:
             raise ValueError(k + ' entry must be present in metadata file')
 
-    df = read_table(file_spec, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+    df = read_table(file_spec, county=county, data_dir=data_dir, paths=paths,
+                    **metadata)
 
     # Don't use the update stage data:
     df = df[df[extra_metadata['collection_stage_column']] !=
@@ -346,11 +339,10 @@ def get_metadata_dict(metadata_file):
     return metadata
 
 
-def get_enrollment(groups=True, file_spec=None,
-                   data_dir=KING_DATA, paths=FILEPATHS, years=None,
-                   metadata_file=METADATA_FILES['enrollment']):
+def get_enrollment(county=None, groups=True, file_spec=None, data_dir=None,
+                   paths=None, metadata_file=METADATA_FILES['enrollment']):
     """
-    Read in the Enrollment tables from King.
+    Read in the raw Enrollment tables.
 
     Return rows with some minor clean-up that
     includes dropping unusable columns de-deplication.
@@ -377,9 +369,10 @@ def get_enrollment(groups=True, file_spec=None,
     enid_column = metadata.pop('person_enrollment_ID')
     pid_column = metadata.pop('person_ID')
     prid_column = metadata.pop('program_ID')
+    entry_date_column = metadata.pop('entry_date')
 
-    df = read_table(file_spec, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+    df = read_table(file_spec, county=county, data_dir=data_dir, paths=paths,
+                    **metadata)
     # Now, group by HouseholdID, and only keep the groups where there are
     # more than one ProjectEntryID.
     # The new dataframe should represent families
@@ -399,10 +392,10 @@ get_enrollment.__doc__ = get_enrollment.__doc__ % (file_path_boilerplate,
                                                    metdata_boilerplate)
 
 
-def get_exit(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+def get_exit(county=None, file_spec=None, data_dir=None, paths=None,
              metadata_file=METADATA_FILES['exit']):
     """
-    Read in the Exit tables from King and map Destinations.
+    Read in the raw Exit tables and map destinations.
 
     Parameters
     ----------
@@ -420,8 +413,8 @@ def get_exit(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     metadata = get_metadata_dict(metadata_file)
     df_destination_column = metadata.pop('destination_column')
     enid_column = metadata.pop('person_enrollment_ID')
-    df = read_table(file_spec, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+    df = read_table(file_spec, county=county, data_dir=data_dir, paths=paths,
+                    **metadata)
 
     df_merge = pu.merge_destination(
         df, df_destination_column=df_destination_column)
@@ -432,10 +425,10 @@ get_exit.__doc__ = get_exit.__doc__ % (file_path_boilerplate,
                                        metdata_boilerplate)
 
 
-def get_client(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+def get_client(county=None, file_spec=None, data_dir=None, paths=None,
                metadata_file=METADATA_FILES['client']):
     """
-    Read in the Client tables from King and map Destinations.
+    Read in the raw Client tables.
 
     Parameters
     ----------
@@ -472,45 +465,16 @@ def get_client(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     dob_column = metadata.pop("dob_column")
 
-    df = read_table(file_spec, data_dir=data_dir, paths=paths,
-                    years=years, dedup=False, **metadata)
-    df = df.set_index(np.arange(df.shape[0]))
-
-    bad_dob = np.logical_or(df[dob_column] >
-                            pd.to_datetime(df.years.astype(str) +
-                                           "/12/31", format='%Y/%m/%d'),
-                            df[dob_column] < pd.to_datetime(
-                                '1900/1/1', format='%Y/%m/%d'))
-    n_bad_dob = np.sum(bad_dob)
-
-    # set any bad DOBs to NaNs. Also set to NaN if the same DOB looks bad in
-    # one year but ok in the other -- ie if the DOB was in the future when it
-    # was first entered it but in the past later
-    gb = df.groupby(pid_column)
-    for pid, group in gb:
-        if np.sum(bad_dob[group.index]) > 0:
-            n_entries = group.shape[0]
-            if n_entries == 1:
-                df.loc[group.index, dob_column] = pd.NaT
-            else:
-                if max(group[dob_column]) == min(group[dob_column]):
-                    df.loc[group.index, dob_column] = pd.NaT
-                else:
-                    df.loc[group.index[np.where(bad_dob[group.index])],
-                           dob_column] = pd.NaT
-
-    print('Found %d entries with bad DOBs' % n_bad_dob)
-
-    # drop years column -- this is the year associated with the csv file
-    df = df.drop('years', axis=1)
-    # perform partial deduplication that was skipped in read_table,
-    #  but don't deduplicate time_var, boolean or numeric columns until after
-    #  resolving differences
+    # for initial deduplication, don't deduplicate time_var, boolean or
+    # numeric columns until after resolving differences
     mid_dedup_cols = list(set(list(duplicate_check_columns) +
                               list(metadata['time_var']) +
                               list(boolean_cols) + list(numeric_cols) +
                               [pid_column]))
-    df = df.drop_duplicates(mid_dedup_cols, keep='last', inplace=False)
+
+    df = read_table(file_spec, county=county, data_dir=data_dir, paths=paths,
+                    duplicate_check_columns=mid_dedup_cols, **metadata)
+    df = df.set_index(np.arange(df.shape[0]))
 
     # iterate through people with more than one entry and resolve differences.
     # Set all rows to the same sensible value
@@ -524,6 +488,8 @@ def get_client(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
             # for differences in time columns, if the difference is less than
             # a year then take the midpoint, otherwise set to NaN
             for col in metadata['time_var']:
+                if col == dob_column:
+                    continue
                 if len(np.unique(group[col])) > 1:
                     is_valid = ~pd.isnull(group[col])
                     n_valid = np.sum(is_valid)
@@ -568,7 +534,10 @@ def get_client(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
 
     # Now all rows with the same pid_column have identical time_var,
     # boolean & numeric_col values so we can perform full deduplication
-    # that was skipped in read_table,
+    # that was skipped in read_table.
+    # Note: we can still have multiple rows if DOBs are different,
+    #   we leave that deduplication until the merge because we need enrollment
+    #   info to determine if DOBs are sane
     df = df.drop_duplicates(duplicate_check_columns, keep='last',
                             inplace=False)
 
@@ -578,13 +547,12 @@ get_client.__doc__ = get_client.__doc__ % (file_path_boilerplate,
                                            metdata_boilerplate)
 
 
-def get_disabilities(file_spec=None,  data_dir=KING_DATA, paths=FILEPATHS,
-                     years=None,
+def get_disabilities(county=None, file_spec=None,  data_dir=None, paths=None,
                      metadata_file=METADATA_FILES['disabilities'],
                      disability_type_file=op.join(DATA_PATH, 'metadata',
                                                   'disability_type.json')):
     """
-    Read in the Disabilities tables from King, convert sets of disablity type
+    Read in the raw Disabilities tables, convert sets of disablity type
     and response rows to columns to reduce to one row per
     primaryID (ie ProjectEntryID) with a column per disability type
 
@@ -619,9 +587,9 @@ def get_disabilities(file_spec=None,  data_dir=KING_DATA, paths=FILEPATHS,
     extra_metadata['person_enrollment_ID'] = metadata['person_enrollment_ID']
 
     stage_suffixes = ENTRY_EXIT_SUFFIX
-    df_stage = read_entry_exit_table(metadata, file_spec=file_spec,
-                                     data_dir=data_dir, paths=paths,
-                                     years=years, suffixes=stage_suffixes)
+    df_stage = read_entry_exit_table(metadata, county=county,
+                                     file_spec=file_spec, data_dir=data_dir,
+                                     paths=paths, suffixes=stage_suffixes)
 
     mapping_dict = get_metadata_dict(disability_type_file)
     # convert to integer keys
@@ -665,11 +633,10 @@ get_disabilities.__doc__ = get_disabilities.__doc__ % (file_path_boilerplate,
                                                        metdata_boilerplate)
 
 
-def get_employment_education(file_spec=None, data_dir=KING_DATA,
-                             paths=FILEPATHS, years=None,
+def get_employment_education(county=None, file_spec=None, data_dir=None, paths=None,
                              metadata_file=METADATA_FILES['employment_education']):
     """
-    Read in the EmploymentEducation tables from King.
+    Read in the raw EmploymentEducation tables.
 
     Parameters
     ----------
@@ -685,9 +652,9 @@ def get_employment_education(file_spec=None, data_dir=KING_DATA,
     if file_spec is None:
         file_spec = 'EmploymentEducation.csv'
 
-    df_wide = read_entry_exit_table(metadata_file, file_spec=file_spec,
-                                    data_dir=data_dir, paths=paths,
-                                    years=years)
+    df_wide = read_entry_exit_table(metadata_file, county=county,
+                                    file_spec=file_spec, data_dir=data_dir,
+                                    paths=paths)
 
     return df_wide
 
@@ -695,11 +662,10 @@ get_employment_education.__doc__ = get_employment_education.__doc__ % (
     file_path_boilerplate, metdata_boilerplate)
 
 
-def get_health_dv(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
-                  years=None,
+def get_health_dv(county=None, file_spec=None, data_dir=None, paths=None,
                   metadata_file=METADATA_FILES['health_dv']):
     """
-    Read in the HealthAndDV tables from King.
+    Read in the raw HealthAndDV tables.
 
     Parameters
     ----------
@@ -715,9 +681,9 @@ def get_health_dv(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
     if file_spec is None:
         file_spec = 'HealthAndDV.csv'
 
-    df_wide = read_entry_exit_table(metadata_file, file_spec=file_spec,
-                                    data_dir=data_dir, paths=paths,
-                                    years=years)
+    df_wide = read_entry_exit_table(metadata_file, county=county,
+                                    file_spec=file_spec, data_dir=data_dir,
+                                    paths=paths)
 
     return df_wide
 
@@ -725,10 +691,10 @@ get_health_dv.__doc__ = get_health_dv.__doc__ % (file_path_boilerplate,
                                                  metdata_boilerplate)
 
 
-def get_income(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
+def get_income(county=None, file_spec=None, data_dir=None, paths=None,
                metadata_file=METADATA_FILES['income']):
     """
-    Read in the IncomeBenefits tables from King.
+    Read in the raw IncomeBenefits tables.
 
     Parameters
     ----------
@@ -753,9 +719,9 @@ def get_income(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS, years=None,
     person_enrollment_ID = metadata['person_enrollment_ID']
 
     suffixes = ENTRY_EXIT_SUFFIX
-    df_wide = read_entry_exit_table(metadata, file_spec=file_spec,
-                                    data_dir=data_dir, paths=paths,
-                                    years=years, suffixes=suffixes)
+    df_wide = read_entry_exit_table(metadata, county=county,
+                                    file_spec=file_spec, data_dir=data_dir,
+                                    paths=paths, suffixes=suffixes)
 
     maximize_cols = []
     for sf in suffixes:
@@ -791,12 +757,12 @@ get_income.__doc__ = get_income.__doc__ % (file_path_boilerplate,
                                            metdata_boilerplate)
 
 
-def get_project(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
-                years=None, metadata_file=METADATA_FILES['project'],
+def get_project(county=None, file_spec=None, data_dir=None, paths=None,
+                metadata_file=METADATA_FILES['project'],
                 project_type_file=op.join(DATA_PATH, 'metadata',
                                           'project_type.json')):
     """
-    Read in the Exit tables from King and map Destinations.
+    Read in the raw Exit tables and map to project info.
 
     Parameters
     ----------
@@ -814,8 +780,8 @@ def get_project(file_spec=None, data_dir=KING_DATA, paths=FILEPATHS,
     metadata = get_metadata_dict(metadata_file)
     project_type_column = metadata.pop('project_type_column')
     projectID = metadata.pop('program_ID')
-    df = read_table(file_spec, data_dir=data_dir, paths=paths,
-                    years=years, **metadata)
+    df = read_table(file_spec, county=county, data_dir=data_dir, paths=paths,
+                    **metadata)
 
     # get project_type dict
     mapping_dict = get_metadata_dict(project_type_file)
@@ -842,21 +808,24 @@ get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
                                              metdata_boilerplate)
 
 
-def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
-                 paths=FILEPATHS, files=None, groups=True, years=None):
-    """ Run all functions that clean up King tables separately, and merge them
+def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
+                 paths=None, files=None, groups=True):
+    """ Run all functions that clean up raw tables separately, and merge them
         all into the enrollment table, where each row represents the project
         enrollment of an individual.
 
         Parameters
         ----------
+        county: string
+            name of county
+
         meta_files: dict
             dictionary giving names of metadata files for each table type
             If any table type is missing it is defaulted using METADATA_FILES
 
         files: dict
             dictionary giving short data file names for each table type.
-                (these must be combined with data_dir, paths and years to get
+                (these must be combined with data_dir, county & paths to get
                 the full file names)
             If any table type is missing the file name is defaulted in the
             respective get_* functions
@@ -867,9 +836,6 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         paths : list
             list of directories inside data_dir to look for csv files in
 
-        years : list
-            list of years to include, default is to include all years
-
         Returns
         ----------
         dataframe with rows representing the record of a person per
@@ -879,9 +845,10 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         files = {}
 
     # Get enrollment data
-    enroll = get_enrollment(file_spec=files.get('enrollment', None),
+    enroll = get_enrollment(county=county,
+                            file_spec=files.get('enrollment', None),
                             metadata_file=meta_files.get('enrollment', None),
-                            groups=groups, years=years, data_dir=data_dir,
+                            groups=groups, data_dir=data_dir,
                             paths=paths)
     print('enroll n_rows:', len(enroll))
     enrollment_metadata = get_metadata_dict(meta_files.get('enrollment',
@@ -892,9 +859,9 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
     # print(enroll)
 
     # Merge exit in
-    exit_table = get_exit(file_spec=files.get('exit', None),
+    exit_table = get_exit(county=county, file_spec=files.get('exit', None),
                           metadata_file=meta_files.get('exit', None),
-                          years=years, data_dir=data_dir, paths=paths)
+                          data_dir=data_dir, paths=paths)
     print('exit n_rows:', len(exit_table))
     exit_metadata = get_metadata_dict(meta_files.get('exit',
                                       METADATA_FILES['exit']))
@@ -909,13 +876,71 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(exit_ppid_column, axis=1)
 
     # Merge client in
-    client = get_client(file_spec=files.get('client', None),
+    client = get_client(county=county, file_spec=files.get('client', None),
                         metadata_file=meta_files.get('client', None),
-                        years=years, data_dir=data_dir, paths=paths)
+                        data_dir=data_dir, paths=paths)
     print('client n_rows:', len(client))
     client_metadata = get_metadata_dict(meta_files.get('client',
                                         METADATA_FILES['client']))
     client_pid_column = client_metadata['person_ID']
+    dob_column = client_metadata['dob_column']
+
+    n_bad_dob = 0
+    # set any DOBs to NaNs if they are in the future relative to the earliest
+    # enrollment. Also set to NaN if the DOB is too early (pre 1900)
+    gb = client.groupby(client_pid_column)
+    for pid, group in gb:
+        enroll_dates = enroll_merge[enroll_merge[enrollment_pid_column] ==
+                                    pid][enrollment_metadata['entry_date']]
+        earliest_enrollment = enroll_dates.min()
+
+        bad_dob = np.logical_or(group[dob_column] > earliest_enrollment,
+                                group[dob_column] < pd.to_datetime(
+                                    '1900/1/1', format='%Y/%m/%d'))
+        n_bad_dob += np.sum(bad_dob)
+        n_entries = group.shape[0]
+
+        if np.sum(bad_dob) > 0:
+            if n_entries == 1:
+                client.loc[group.index, dob_column] = pd.NaT
+            else:
+                if max(group[dob_column]) == min(group[dob_column]):
+                    client.loc[group.index, dob_column] = pd.NaT
+                else:
+                    client.loc[group.index[np.where(bad_dob)],
+                               dob_column] = pd.NaT
+
+    gb = client.groupby(client_pid_column)
+    for pid, group in gb:
+        n_entries = group.shape[0]
+        if n_entries > 1:
+            # for differences in DOB, if the difference is less than
+            # a year then take the midpoint, otherwise set to NaN
+            if len(np.unique(group[dob_column])) > 1:
+                is_valid = ~pd.isnull(group[dob_column])
+                n_valid = np.sum(is_valid)
+                if n_valid == 1:
+                    client.loc[group.index, dob_column] = \
+                        group[dob_column][is_valid].values[0]
+                elif n_valid > 1:
+                    t_diff = (np.max(group[dob_column]) -
+                              np.min(group[dob_column]))
+                    if t_diff < datetime.timedelta(365):
+                        t_diff_sec = t_diff.seconds + 86400 * t_diff.days
+                        new_date = (np.min(group[dob_column]) +
+                                    datetime.timedelta(
+                                        seconds=t_diff_sec / 2.)).date()
+                        client.loc[group.index, dob_column] = \
+                            pd.datetime(new_date.year, new_date.month,
+                                        new_date.day)
+                    else:
+                        client.loc[group.index, dob_column] = pd.NaT
+
+    # now drop duplicates
+    client = client.drop_duplicates(client_metadata['duplicate_check_columns'],
+                                    keep='last', inplace=False)
+
+    print('Found %d entries with bad DOBs' % n_bad_dob)
 
     enroll_merge = pd.merge(left=enroll_merge, right=client, how='left',
                             left_on=enrollment_pid_column,
@@ -926,9 +951,10 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(client_pid_column, axis=1)
 
     # Merge disabilities in
-    disabilities = get_disabilities(file_spec=files.get('disabilities', None),
+    disabilities = get_disabilities(county=county,
+                                    file_spec=files.get('disabilities', None),
                                     metadata_file=meta_files.get('disabilities', None),
-                                    years=years, data_dir=data_dir,
+                                    data_dir=data_dir,
                                     paths=paths)
     print('disabilities n_rows:', len(disabilities))
     disabilities_metadata = get_metadata_dict(meta_files.get('disabilities',
@@ -943,10 +969,10 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(disabilities_ppid_column, axis=1)
 
     # Merge employment_education in
-    emp_edu = get_employment_education(file_spec=files.get('employment_education', None),
+    emp_edu = get_employment_education(county=county,
+                                       file_spec=files.get('employment_education', None),
                                        metadata_file=meta_files.get('employment_education', None),
-                                       years=years, data_dir=data_dir,
-                                       paths=paths)
+                                       data_dir=data_dir, paths=paths)
     print('emp_edu n_rows:', len(emp_edu))
     emp_edu_metadata = get_metadata_dict(meta_files.get('employment_education',
                                          METADATA_FILES['employment_education']))
@@ -960,9 +986,10 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(emp_edu_ppid_column, axis=1)
 
     # Merge health in
-    health_dv = get_health_dv(file_spec=files.get('health_dv', None),
+    health_dv = get_health_dv(county=county,
+                              file_spec=files.get('health_dv', None),
                               metadata_file=meta_files.get('health_dv', None),
-                              years=years, data_dir=data_dir, paths=paths)
+                              data_dir=data_dir, paths=paths)
     print('health_dv n_rows:', len(health_dv))
     health_dv_metadata = get_metadata_dict(meta_files.get('health_dv',
                                            METADATA_FILES['health_dv']))
@@ -976,9 +1003,9 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(health_dv_ppid_column, axis=1)
 
     # Merge income in
-    income = get_income(file_spec=files.get('income', None),
+    income = get_income(county=county, file_spec=files.get('income', None),
                         metadata_file=meta_files.get('income', None),
-                        years=years, data_dir=data_dir, paths=paths)
+                        data_dir=data_dir, paths=paths)
     print('income n_rows:', len(income))
     income_metadata = get_metadata_dict(meta_files.get('income',
                                         METADATA_FILES['income']))
@@ -992,9 +1019,9 @@ def merge_tables(meta_files=METADATA_FILES, data_dir=KING_DATA,
         enroll_merge = enroll_merge.drop(income_ppid_column, axis=1)
 
     # Merge project in
-    project = get_project(file_spec=files.get('project', None),
+    project = get_project(county=county, file_spec=files.get('project', None),
                           metadata_file=meta_files.get('project', None),
-                          years=years, data_dir=data_dir, paths=paths)
+                          data_dir=data_dir, paths=paths)
     print('project n_rows:', len(project))
     project_metadata = get_metadata_dict(meta_files.get('project',
                                          METADATA_FILES['project']))

@@ -13,7 +13,7 @@
                    "ResourcePackage", "OtherAftercarePlanOrAction",
                    "ProjectCompletionStatus", "EarlyExitReason",
                    "FamilyReunificationAchieved", "DateCreated", "DateUpdated",
-                   "UserID", "DateDeleted", "ExportID", "years"],
+                   "UserID", "DateDeleted", "ExportID"],
 "categorical_var":["Destination"],
 "time_var":["ExitDate"]
 }
