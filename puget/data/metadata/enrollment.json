@@ -32,5 +32,6 @@
    "ActiveMilitaryParent", "IncarceratedParent",
    "DateCreated", "DateUpdated", "UserID", "ExportID"],
 "categorical_var":["ResidencePrior", "ResidencePriorLengthOfStay"],
-"time_var":["EntryDate", "DateToStreetESSH"]
+"time_var":["EntryDate", "DateToStreetESSH"],
+"entry_date":"EntryDate"
 }

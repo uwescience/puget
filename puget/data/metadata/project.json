@@ -5,6 +5,6 @@
                            "ProjectType"],
 "columns_to_drop":["ContinuumProject","ResidentialAffiliation",
                    "TrackingMethod", "TargetPopulation", "DateCreated",
-                   "DateUpdated", "UserID", "DateDeleted", "ExportID", "years"],
+                   "DateUpdated", "UserID", "DateDeleted", "ExportID"],
 "project_type_column": "ProjectType"
 }

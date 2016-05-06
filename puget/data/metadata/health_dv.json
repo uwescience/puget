@@ -7,7 +7,7 @@
 "columns_to_drop":["HealthAndDVID","PersonalID", "InformationDate",
                    "WhenOccurred", "DentalHealthStatus", "MentalHealthStatus",
                    "DueDate", "DateCreated", "DateUpdated",
-                   "UserID", "DateDeleted", "ExportID", "years"],
+                   "UserID", "DateDeleted", "ExportID"],
 "categorical_var":["DomesticViolenceVictim", "GeneralHealthStatus",
                    "PregnancyStatus"],
 "collection_stage_column":"DataCollectionStage",
