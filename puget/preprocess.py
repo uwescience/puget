@@ -65,6 +65,11 @@ file_path_boilerplate = (
         if a string, should be the filename of the .csv table and data_dir &
             paths parameters are required
 
+    county: string
+        name of county to get data for. Must be a key in COUNTY_FOLDERS and
+            have a folder of the same name in the data folder. Not required
+            if file_spec is a dictionary
+
     data_dir : string
         full path to general data folder (usually puget/data/*county*);
             not required if file_spec is a dictionary
