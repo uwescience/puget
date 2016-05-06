@@ -1,5 +1,5 @@
-"""Tests for functions in raw.py."""
-import puget.raw as pr
+"""Tests for functions in preprocess.py."""
+import puget.preprocess as pp
 import puget
 import os
 import os.path as op
@@ -18,7 +18,7 @@ def test_std_path_setup():
     # test with one year
     paths = ['test_2012']
 
-    file_spec = pr.std_path_setup(filename, data_dir, paths)
+    file_spec = pp.std_path_setup(filename, data_dir, paths)
     test_dict = {'test_2012': op.join(data_dir, 'test_2012', filename)}
 
     assert_equal(file_spec, test_dict)
@@ -26,7 +26,7 @@ def test_std_path_setup():
     # test with limited years
     paths = ['test_2012', 'test_2013']
 
-    file_spec = pr.std_path_setup(filename, data_dir, paths)
+    file_spec = pp.std_path_setup(filename, data_dir, paths)
     test_dict = {'test_2012': op.join(data_dir, 'test_2012', filename),
                  'test_2013': op.join(data_dir, 'test_2013', filename)}
 
@@ -34,7 +34,7 @@ def test_std_path_setup():
 
     # test with all years
     paths = ['test_2011', 'test_2012', 'test_2013', 'test_2014']
-    file_spec = pr.std_path_setup(filename, data_dir, paths)
+    file_spec = pp.std_path_setup(filename, data_dir, paths)
     test_dict = {'test_2011': op.join(data_dir, 'test_2011', filename),
                  'test_2012': op.join(data_dir, 'test_2012', filename),
                  'test_2013': op.join(data_dir, 'test_2013', filename),
@@ -55,7 +55,7 @@ def test_read_table():
     temp_csv_file.seek(0)
 
     file_spec = {'2011': temp_csv_file.name}
-    df = pr.read_table(file_spec, data_dir=None, paths=None,
+    df = pp.read_table(file_spec, data_dir=None, paths=None,
                        columns_to_drop=['drop1'], categorical_var=['categ1'],
                        time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
@@ -72,7 +72,7 @@ def test_read_table():
     # test passing a string filename with data_dir and path
     path, fname = op.split(temp_csv_file.name)
     path0, path1 = op.split(path)
-    df = pr.read_table(fname, data_dir=path0, paths=[path1],
+    df = pp.read_table(fname, data_dir=path0, paths=[path1],
                        columns_to_drop=['drop1'], categorical_var=['categ1'],
                        time_var=['time1'],
                        duplicate_check_columns=['id', 'time1', 'categ1'])
@@ -80,11 +80,11 @@ def test_read_table():
     temp_csv_file.close()
 
     # test error checking
-    assert_raises(ValueError, pr.read_table, file_spec,
-                  data_dir=op.join(pr.DATA_PATH, 'king'))
+    assert_raises(ValueError, pp.read_table, file_spec,
+                  data_dir=op.join(pp.DATA_PATH, 'king'))
 
     # test error checking
-    assert_raises(ValueError, pr.read_table, 'test', data_dir=None, paths=None)
+    assert_raises(ValueError, pp.read_table, 'test', data_dir=None, paths=None)
 
 
 def test_read_entry_exit():
@@ -108,7 +108,7 @@ def test_read_entry_exit():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.read_entry_exit_table(file_spec=file_spec, data_dir=None,
+    df = pp.read_entry_exit_table(file_spec=file_spec, data_dir=None,
                                   paths=None,
                                   metadata=temp_meta_file.name)
 
@@ -129,7 +129,7 @@ def test_read_entry_exit():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pr.read_entry_exit_table, file_spec=file_spec,
+    assert_raises(ValueError, pp.read_entry_exit_table, file_spec=file_spec,
                   metadata=temp_meta_file2.name)
 
     temp_csv_file.close()
@@ -166,7 +166,7 @@ def test_get_enrollment():
     file_spec = {2011: temp_csv_file.name}
 
     # first try with groups=True (default)
-    df = pr.get_enrollment(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_enrollment(file_spec=file_spec, data_dir=None, paths=None,
                            metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1], 'time1':
@@ -176,7 +176,7 @@ def test_get_enrollment():
     pdt.assert_frame_equal(df, df_test)
 
     # try again with groups=False
-    df = pr.get_enrollment(groups=False, file_spec=file_spec, data_dir=None,
+    df = pp.get_enrollment(groups=False, file_spec=file_spec, data_dir=None,
                            paths=None, metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [1, 1, 2],
@@ -211,7 +211,7 @@ def test_get_exit():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_exit(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_exit(file_spec=file_spec, data_dir=None, paths=None,
                      metadata_file=temp_meta_file.name)
 
     mapping_table = pd.read_csv(op.join(puget.data.DATA_PATH, 'metadata',
@@ -308,7 +308,7 @@ def test_get_client():
     temp_meta_file.seek(0)
 
     # get path & filenames
-    df = pr.get_client(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_client(file_spec=file_spec, data_dir=None, paths=None,
                        metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'id': [11, 11, 12, 13, 14, 15, 15, 16, 16, 17, 17,
@@ -357,7 +357,7 @@ def test_get_client():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pr.get_client,
+    assert_raises(ValueError, pp.get_client,
                   file_spec=file_spec, data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
@@ -391,7 +391,7 @@ def test_get_disabilities():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_disabilities(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_disabilities(file_spec=file_spec, data_dir=None, paths=None,
                              metadata_file=temp_meta_file.name)
 
     type_dict = {5: 'Physical', 6: 'Developmental', 7: 'ChronicHealth',
@@ -416,7 +416,7 @@ def test_get_disabilities():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pr.get_disabilities, file_spec=file_spec,
+    assert_raises(ValueError, pp.get_disabilities, file_spec=file_spec,
                   data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
@@ -447,7 +447,7 @@ def test_get_employment_education():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_employment_education(file_spec=file_spec, data_dir=None,
+    df = pp.get_employment_education(file_spec=file_spec, data_dir=None,
                                      paths=None,
                                      metadata_file=temp_meta_file.name)
 
@@ -486,7 +486,7 @@ def test_get_health_dv():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_health_dv(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_health_dv(file_spec=file_spec, data_dir=None, paths=None,
                           metadata_file=temp_meta_file.name)
 
     # make sure values are floats
@@ -527,7 +527,7 @@ def test_get_income():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_income(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_income(file_spec=file_spec, data_dir=None, paths=None,
                        metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [11, 12],
@@ -551,7 +551,7 @@ def test_get_income():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pr.get_income, file_spec=file_spec,
+    assert_raises(ValueError, pp.get_income, file_spec=file_spec,
                   data_dir=None, paths=None,
                   metadata_file=temp_meta_file2.name)
 
@@ -579,7 +579,7 @@ def test_get_project():
 
     file_spec = {2011: temp_csv_file.name}
 
-    df = pr.get_project(file_spec=file_spec, data_dir=None, paths=None,
+    df = pp.get_project(file_spec=file_spec, data_dir=None, paths=None,
                         metadata_file=temp_meta_file.name)
 
     df_test = pd.DataFrame({'pid': [3, 4], 'name': ['shelter1', 'rrh2'],
@@ -761,7 +761,7 @@ def test_merge():
                           'income': income_meta_file,
                           'project': project_meta_file}
 
-        df = pr.merge_tables(meta_files=metadata_files,
+        df = pp.merge_tables(meta_files=metadata_files,
                              data_dir=temp_dir, paths=paths, groups=False)
 
         df_test = pd.DataFrame({'personID': [1, 2, 3, 4],

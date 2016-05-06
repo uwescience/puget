@@ -1,5 +1,5 @@
 """
-Functions specific to raw extract data from HMIS.
+Functions specific to preprocess raw extract data from HMIS.
 
 The raw data is provided in the following format:
     (king data is divided by year;
@@ -160,12 +160,18 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
                 raise ValueError('If file_spec is a string, data_dir or ' +
                                  'county must be passed')
             else:
+                if not isinstance(county, str):
+                    raise ValueError('county must be a string -- '
+                                     'one county at a time, please!')
                 data_dir = op.join(DATA_PATH, county)
         if paths is None:
             if county is None:
                 raise ValueError('If file_spec is a string, paths or county ' +
                                  'must be passed')
             else:
+                if not isinstance(county, str):
+                    raise ValueError('county must be a string -- '
+                                     'one county at a time, please!')
                 paths = COUNTY_FOLDERS[county]
 
         file_spec = std_path_setup(file_spec, data_dir, paths)
