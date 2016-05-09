@@ -117,7 +117,8 @@ def std_path_setup(filename, data_dir, paths):
 def read_table(file_spec, county=None, data_dir=None, paths=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
-               time_var=None, duplicate_check_columns=None, dedup=True):
+               time_var=None, duplicate_check_columns=None, dedup=True,
+               encoding=None):
     """
     Read in any .csv table from multiple folders in the raw data.
 
@@ -189,11 +190,11 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
 
     # Start by reading the first file into a DataFrame
     path, fname = file_spec_use.popitem()
-    df = pd.read_csv(fname, low_memory=False)
+    df = pd.read_csv(fname, low_memory=False, encoding=encoding)
 
     # Then, for the rest of the files, append to the DataFrame.
     for path, fname in file_spec_use.items():
-        this_df = pd.read_csv(fname, low_memory=False)
+        this_df = pd.read_csv(fname, low_memory=False, encoding=encoding)
         df = df.append(this_df)
 
     # Sometimes, column headers can have the unicode 'zero width no-break space
@@ -205,6 +206,8 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
 
     # Drop unnecessary columns
     df = df.drop(columns_to_drop, axis=1)
+
+    # Drop duplicates
     if dedup:
         if duplicate_check_columns is None:
             warnings.warn('dedup is True but duplicate_check_columns is ' +
