@@ -8,5 +8,6 @@
                    "UserID", "DateDeleted", "ExportID"],
 "categorical_var":["Employed"],
 "collection_stage_column":"DataCollectionStage",
-"entry_stage_val":1, "exit_stage_val":3, "update_stage_val": 2
+"entry_stage_val":1, "exit_stage_val":3, "update_stage_val": 2,
+"annual_assessment_stage_val": 5, "post_exit_stage_val": 6
 }

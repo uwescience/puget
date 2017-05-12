@@ -319,6 +319,8 @@ def read_entry_exit_table(metadata, county=None, file_spec=None, data_dir=None,
                       'entry_stage_val': None,
                       'exit_stage_val': None,
                       'update_stage_val': None,
+                      'annual_assessment_stage_val': None,
+                      'post_exit_stage_val': None,
                       'person_enrollment_ID': None}
 
     for k in extra_metadata:
@@ -331,14 +333,15 @@ def read_entry_exit_table(metadata, county=None, file_spec=None, data_dir=None,
                     **metadata)
 
     # Don't use the update stage data:
-    df = df[df[extra_metadata['collection_stage_column']] !=
-            extra_metadata['update_stage_val']]
+    df = df[(df[extra_metadata['collection_stage_column']] !=
+            extra_metadata['update_stage_val']) &
+            (df[extra_metadata['collection_stage_column']] != extra_metadata['annual_assessment_stage_val']) &
+            (df[extra_metadata['collection_stage_column']] != extra_metadata['post_exit_stage_val'])]
 
-    df_wide = split_rows_to_columns(
-            df, extra_metadata['collection_stage_column'],
-            dict(zip([extra_metadata['entry_stage_val'],
-                      extra_metadata['exit_stage_val']], suffixes)),
-            extra_metadata['person_enrollment_ID'])
+    df_wide = split_rows_to_columns(df, extra_metadata['collection_stage_column'],
+                                    dict(zip([extra_metadata['entry_stage_val'],
+                                              extra_metadata['exit_stage_val']], suffixes)),
+                                    extra_metadata['person_enrollment_ID'])
 
     return df_wide
 

@@ -100,6 +100,7 @@ def test_read_entry_exit():
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
                 'exit_stage_val': 1, 'update_stage_val': 2,
+                'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                 'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
@@ -382,6 +383,7 @@ def test_get_disabilities():
                 'categorical_var': ['response'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 10,
                 'exit_stage_val': 20, 'update_stage_val': 30,
+                'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                 'type_column': 'type', 'response_column': 'response',
                 'person_enrollment_ID': 'pid'}
 
@@ -439,6 +441,7 @@ def test_get_employment_education():
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
                 'exit_stage_val': 1, 'update_stage_val': 2,
+                'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                 'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
@@ -478,6 +481,7 @@ def test_get_health_dv():
                 'categorical_var': ['value'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
                 'exit_stage_val': 1, 'update_stage_val': 2,
+                'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                 'person_enrollment_ID': 'id'}
 
     metadata_json = json.dumps(metadata)
@@ -519,6 +523,7 @@ def test_get_income():
                 'categorical_var': ['income'],
                 'collection_stage_column': 'stage', 'entry_stage_val': 0,
                 'exit_stage_val': 1, 'update_stage_val': 2,
+                'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                 'person_enrollment_ID': 'pid',
                 'columns_to_take_max': ['income', 'incomeAmount']}
     metadata_json = json.dumps(metadata)
@@ -674,7 +679,9 @@ def test_merge():
                                  'categorical_var': ['response'],
                                  'collection_stage_column': 'stage',
                                  'entry_stage_val': 0, "exit_stage_val": 1,
-                                 'update_stage_val': 2, 'type_column': 'type',
+                                 'update_stage_val': 2,
+                                 'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
+                                 'type_column': 'type',
                                  'response_column': 'response',
                                  'duplicate_check_columns': ['person_enrollID',
                                                              'stage', 'type'],
@@ -695,6 +702,7 @@ def test_merge():
                             'collection_stage_column': 'stage',
                             'entry_stage_val': 0, "exit_stage_val": 1,
                             'update_stage_val': 2,
+                            'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                             'duplicate_check_columns': ['ppid', 'stage'],
                             'columns_to_drop': []}
 
@@ -713,6 +721,7 @@ def test_merge():
                               'collection_stage_column': 'stage',
                               'entry_stage_val': 0, 'exit_stage_val': 1,
                               'update_stage_val': 2,
+                              'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                               'duplicate_check_columns': ['ppid', 'stage'],
                               'columns_to_drop': []}
         health_dv_csv_file = op.join(dir_year, 'HealthAndDV.csv')
@@ -729,6 +738,7 @@ def test_merge():
                            'collection_stage_column': 'stage',
                            'entry_stage_val': 0, 'exit_stage_val': 1,
                            'update_stage_val': 2,
+                           'annual_assessment_stage_val': 5, 'post_exit_stage_val': 6,
                            'columns_to_take_max': ['income'],
                            'duplicate_check_columns': ['ppid', 'stage'],
                            'columns_to_drop': []}
