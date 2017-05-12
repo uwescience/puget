@@ -205,7 +205,8 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
             df.rename(columns={col: col[1:]}, inplace=True)
 
     # Drop unnecessary columns
-    df = df.drop(columns_to_drop, axis=1)
+    cols_drop_use = list(set(columns_to_drop).intersection(set(df.columns)))
+    df = df.drop(cols_drop_use, axis=1)
 
     # Drop duplicates
     if dedup:
