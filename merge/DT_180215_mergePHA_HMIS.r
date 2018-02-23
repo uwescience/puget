@@ -4,7 +4,7 @@
 # ==========================================================================
 
 	rm(list=ls()) #reset
-	options(max.print = 10000, tibble.print_max = 50, scipen = 999, width = 140)
+	options(max.print = 10000, tibble.print_max = 50, scipen = 999, width = 169)
 	gc()
 
 # ==========================================================================
@@ -86,19 +86,16 @@
 # Convert DOB to Date
 	hmis.rl <- hmis.rl %>% mutate(dob = ymd(dob))
 
-### Combine ###
-	df <- bind_rows(pha.rl,hmis.rl)	%>% filter(!is.na(lname) & !is.na(fname))
-	df %>% arrange(fname) %>% head(100)
-
-### Remove names that are odd
-
+### Combine & remove odd names ###
+	df <- bind_rows(pha.rl,hmis.rl)
 
 # ==========================================================================
-# Raw check
+# Raw check - just ssn's in each df
 # ==========================================================================
 ### filter ssn's that are in both hmis and pha
 	hmis.ssn <- hmis.rl %>% filter(!is.na(ssn),ssn %in% pha.rl$ssn)
 	pha.ssn <- pha.rl %>% filter(!is.na(ssn),ssn %in% hmis.rl$ssn)
+	df %>% filter(duplicated(ssn)) %>% dim
 
 ### dim ###
 	dim(hmis.ssn) # 38,422
@@ -119,13 +116,27 @@ system.time(
 	classify1 <- epiClassify(RL1.wt, threshold.upper = .7)
 	summary(classify1)
 	system.time(
-		pairs1 <- getPairs(classify1, single.rows = FALSE)
+		# pairs1 <- getPairs(classify1, single.rows = FALSE)
+		pairs1 <- getPairs(classify1, show = "links", single.rows = TRUE)
 	)
 
- 	head(pairs1, 100)
- 	pairs1 %>% filter(Weight >= .99)
+	pairs1.uni <- pairs1 %>% arrange(id1) %>% filter(!duplicated(id2))
+	length(pairs1.uni$Weight[pairs1.uni$Weight < .75])
+	summary(pairs1.uni)
+	pairs1.uni %>% select(id1, ssn.1:dob.1,ssn.2:dob.2, -mname.1,-mname.2)
 
- 	####
+ 	head(pairs1, 100)
+ 	pairs1 %>% filter(Weight > .99)
+
+ 	paris1 <- pairs1 %>% arrange(id) %>% filter(!duplicated(id))
+
+
+
+#############
+#############
+#############
+#############
+
  	library(RecordLinkage)
 
 	# Attempt 4 with ID creation
@@ -161,6 +172,20 @@ system.time(
 
 	# replace matches in ID with the thing they match with from ID.1
 	df_names$ID <- ifelse(is.na(df_names$ID.1), df_names$ID, df_names$ID.1)
+
+# ==========================================================================
+# Considerations
+# ==========================================================================
+	### Remove "refused" and "consent" from first and last names
+	 %>%
+			filter(#!is.na(lname) & !is.na(fname),
+					!grepl("Refused", lname),
+					!grepl("Anonymous",lname),
+					!grepl("Consent", lname))
+
+	df %>% arrange(ssn) %>% filter(grepl("Refused", lname)) #%>% head(100)
+	data.frame(table(df$lname)) %>% arrange(desc(Freq)) %>% head(100)
+	df %>% filter(is.na(ssn))
 
 # ==========================================================================
 # fastLink style - LONG RUNS
