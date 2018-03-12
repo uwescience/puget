@@ -25,9 +25,9 @@
 			mutate(pid0 = paste("HMIS0_",PersonalID,sep=""))
 
 	load("data/Housing/OrganizedData/pha_longitudinal.Rdata")
+	# pha <- data.table::fread("data/Housing/OrganizedData/pha_longitudinal.csv"header=T,strip.white=T,na.strings= c("NA", " ", ""),stringsAsFactors=F)
 
-	pha <- pha_longitudinal %>%
-			mutate(pid0 = paste("PHA0_",pid, sep = ""))
+	pha <- pha_longitudinal %>% mutate(pid0 = paste("PHA0_",pid, sep = ""))
 
 # ==========================================================================
 # Data prep
@@ -37,6 +37,10 @@
 
 # Create bad dob - freq of common january 1 dob
 		bad_dob <- c("1980-01-01", "1970-01-01", "1982-01-01", "1990-01-01", "1985-01-01", "1975-01-01", "1981-01-01", "1978-01-01", "1983-01-01", "1986-01-01", "1960-01-01", "1979-01-01", "1972-01-01", "1988-01-01", "1989-01-01", "1984-01-01", "2009-01-01", "2010-01-01", "1968-01-01", "1965-01-01", "1974-01-01", "1987-01-01", "1969-01-01", "1977-01-01", "1971-01-01", "1967-01-01", "2011-01-01", "1976-01-01", "2007-01-01", "1961-01-01", "1963-01-01", "1973-01-01", "2008-01-01", "1964-01-01", "1991-01-01", "1966-01-01", "1962-01-01", "2006-01-01", "2004-01-01", "2012-01-01", "2005-01-01", "1992-01-01", "2000-01-01", "1959-01-01", "1958-01-01", "2003-01-01", "2001-01-01", "1994-01-01", "1993-01-01", "2002-01-01", "1995-01-01", "1999-01-01", "1996-01-01", "1957-01-01", "1955-01-01", "2013-01-01", "1998-01-01", "1956-01-01", "1997-01-01", "1954-01-01", "2014-01-01", "1950-01-01", "1953-01-01", "1952-01-01", "2015-01-01", "1951-01-01", "1949-01-01", "1948-01-01", "1947-01-01", "1945-01-01", "2016-01-01", "1946-01-01", "1900-01-01", "1943-01-01", "1901-01-01", "1944-01-01", "1940-01-01", "1942-01-01", "1941-01-01", "1935-01-01", "1939-01-01", "1938-01-01", "1932-01-01", "1934-01-01", "1933-01-01", "1930-01-01")
+
+		# ==========================================================================
+		# Test for Jan 1...
+		# ==========================================================================
 
 # subset PHA
 	pha.rl <- pha %>%
@@ -176,6 +180,7 @@
 	summary(check)
 	check <- getPairs(check, show = "links", single.rows = TRUE)
 	check %>% filter(Weight >.7) %>% tail
+	hist(check$Weight, breaks = 40)
 
 # Match threshold choice
 	matches1 <- epiClassify(w1,.7)
@@ -221,6 +226,7 @@
 	summary(check)
 	check <- getPairs(check, show = "links", single.rows = TRUE)
 	check %>% filter(Weight >.65) %>% tail
+	hist(check$Weight, breaks = 40)
 
 # Match threshold choice
 	matches2 <- epiClassify(w2,.7)
@@ -268,6 +274,7 @@
 	summary(check)
 	check <- getPairs(check, single.rows = TRUE)
 	check %>% filter(Weight >.59) %>% tail(10)
+	hist(check$Weight, breaks = 40)
 
 # Match threshold choice
 	matches3 <- epiClassify(w3,.65)
@@ -315,6 +322,7 @@
 	summary(check)
 	check <- getPairs(check, single.rows = TRUE)
 	check %>% filter(Weight >.7) %>% tail
+	hist(check$Weight, breaks = 40)
 
 # Match threshold choice
 	matches4 <- epiClassify(w4,.7)
