@@ -25,7 +25,6 @@
 			mutate(pid0 = paste("HMIS0_",PersonalID,sep=""))
 
 	load("data/Housing/OrganizedData/pha_longitudinal.Rdata")
-	# pha <- data.table::fread("data/Housing/OrganizedData/pha_longitudinal.csv"header=T,strip.white=T,na.strings= c("NA", " ", ""),stringsAsFactors=F)
 
 	pha <- pha_longitudinal %>% mutate(pid0 = paste("PHA0_",pid, sep = ""))
 
@@ -35,7 +34,9 @@
 
 ### Subset & clean ###
 
-# Create bad dob - freq of common january 1 dob
+# Create bad dob - frequent january 1 dob
+		data.frame(table(pha$dob)) %>% arrange(desc(Freq)) %>% head(80)
+		data.frame(table(hmis$DOB)) %>% arrange(desc(Freq)) %>% head(80)
 		bad_dob <- c("1980-01-01", "1970-01-01", "1982-01-01", "1990-01-01", "1985-01-01", "1975-01-01", "1981-01-01", "1978-01-01", "1983-01-01", "1986-01-01", "1960-01-01", "1979-01-01", "1972-01-01", "1988-01-01", "1989-01-01", "1984-01-01", "2009-01-01", "2010-01-01", "1968-01-01", "1965-01-01", "1974-01-01", "1987-01-01", "1969-01-01", "1977-01-01", "1971-01-01", "1967-01-01", "2011-01-01", "1976-01-01", "2007-01-01", "1961-01-01", "1963-01-01", "1973-01-01", "2008-01-01", "1964-01-01", "1991-01-01", "1966-01-01", "1962-01-01", "2006-01-01", "2004-01-01", "2012-01-01", "2005-01-01", "1992-01-01", "2000-01-01", "1959-01-01", "1958-01-01", "2003-01-01", "2001-01-01", "1994-01-01", "1993-01-01", "2002-01-01", "1995-01-01", "1999-01-01", "1996-01-01", "1957-01-01", "1955-01-01", "2013-01-01", "1998-01-01", "1956-01-01", "1997-01-01", "1954-01-01", "2014-01-01", "1950-01-01", "1953-01-01", "1952-01-01", "2015-01-01", "1951-01-01", "1949-01-01", "1948-01-01", "1947-01-01", "1945-01-01", "2016-01-01", "1946-01-01", "1900-01-01", "1943-01-01", "1901-01-01", "1944-01-01", "1940-01-01", "1942-01-01", "1941-01-01", "1935-01-01", "1939-01-01", "1938-01-01", "1932-01-01", "1934-01-01", "1933-01-01", "1930-01-01")
 
 		# ==========================================================================
@@ -126,38 +127,45 @@
 				dob1_d = day(dob1)) %>%
 			distinct()
 
-		dim(df)
-		glimpse(df)
-		head(df, 100)
-		df %>% filter(ssn==444444444)
-		df %>% filter(nchar(ssn)>8, ssn_dq==3)
+	# Checks
+		# dim(df)
+		# glimpse(df)
+		# head(df, 100)
+		# df %>% filter(ssn==444444444)
+		# df %>% filter(nchar(ssn)>8, ssn_dq==3)
 
 ### Subset out refuesed names
 	df_sub <- df %>% filter(!grepl("REFUSED",lname),
 							!grepl("REFUSED",fname),
 							!grepl("ANONYMOUS",lname),
 							!grepl("ANONYMOUS",fname))
-	dim(df_sub)
+	# dim(df_sub)
 
-####
-# Codebook: PID's and SSN's
-# pid0 = personal ID from pha and hmis - Alastair's linkage and HMIS ID's
-# pid1 = generated pid by Tim within pha and hmis - unique id for each row
-# pid2 = generated pid by Tim after df merge - unique id for each row
-# ssn  = original ssn
-# ssn1 = ssn quality == 1 and 9 digits
-# dob1 = dob that is not in the list of very frequent 1/1 dates
-####
+	####
+	# Codebook: PID's and SSN's
+	# pid0 = personal ID from pha and hmis - Alastair's linkage and HMIS ID's
+	# pid1 = generated pid by Tim within pha and hmis - unique id for each row
+	# pid2 = generated pid by Tim after df merge - unique id for each row
+	# ssn_dq =
+	#	 1 = 9-digit ssn or HMIS dq == 1
+	#	 2 = less than 9 digits or HMIS dq == 2
+	#    3 = NA, all same digit, or HMIS dq == 3
+	# ssn  = original ssn
+	# ssn1 = ssn quality == 1 and 9 digits
+	# dob1 = dob that is not in the list of very frequent 1/1 dates
+	####
 
 # ==========================================================================
-# RL1 - SSN
+# RL1 - SSN & DOB_Y
 # Block on quality ssn's using df w/o "Refused" names
+# Logic: Match on quality SSN's and the DOB year, however, strcmp on month
+# 		and days not in the "bad" "01-01" DOB onject above.
 # ==========================================================================
 
 	RL1 <- compare.dedup(df_sub,
 			blockfld = c("ssn1"),
-	  		strcmp = c( #"dob_d",
-	  					"dob_m",
+	  		strcmp = c( "dob1_d",
+	  					"dob1_m",
 	  					"dob_y",
 	  					# "ssn",
 	  					"fname",
@@ -166,140 +174,70 @@
 	  					"suf"),
 	  		phonetic = c("lname", "fname", "mname"),
 	  		phonfun = soundex,
-	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn", "dob_dq","dob1", "dob1_d", "dob1_m", "dob1_y"))
+	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob1_y"))
 
 # epiWeigts
 	w1 <- epiWeights(RL1)
 
-# Threshold plots
-	# hist(w1$Wdata, breaks = 200)
-	# getParetoThreshold(w1)
-
-# Threshold checks
-	check <- epiClassify(w1,.5)
-	summary(check)
-	check <- getPairs(check, show = "links", single.rows = TRUE)
-	check %>% filter(Weight >.7) %>% tail
-	hist(check$Weight, breaks = 40)
-
 # Match threshold choice
-	matches1 <- epiClassify(w1,.7)
+	matches1 <- epiClassify(w1,.1)
 	matches1 <- getPairs(matches1, show = "links", single.rows = TRUE)
 
-		glimpse(matches1)
-		head(matches1)
-		hist(matches1$Weight, breaks = 40)
+	# Checks
+		# glimpse(matches1)
+		# head(matches1)
+		# hist(matches1$Weight, breaks = 40)
 
 ### Reduce duplicated id2
 	matches1 <- matches1 %>% arrange(id1) %>% filter(!duplicated(id2))
 
 ### Create link file
-	link <- matches1 %>% select(ssn.1:ssn_dq.1,pid0.1,pid1.1,pid2.1,pid2.2, ssn_rlwt=Weight)
+	link <- matches1 %>% select(ssn.1:ssn_dq.1,pid0.1,pid1.1,pid2.1,pid2.2, ssn_dobywt=Weight)
 	head(link)
+	dim(link)
 
 # ==========================================================================
-# RL2 - SSN1, DOB_Y
+# RL2 - fname, lname, dob1_y, dob1_m, dob1_d
+# Logic: lnames, original DOB year, and good DOB month and day
 # ==========================================================================
+
 	RL2 <- compare.dedup(df_sub,
-			blockfld = c("ssn1", "dob1_y"),
-	  		strcmp = c( "dob1_d",
-	  					"dob1_m",
-	  					# "dob_y",
-	  					# "ssn",
-	  					"fname",
-	  					"mname",
-	  					"lname",
-	  					"suf"),
-	  		phonetic = c("lname", "fname", "mname"),
-	  		phonfun = soundex,
-	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob_y"))
-
-# epiWeigts
-	w2 <- epiWeights(RL2)
-
-# Threshold plots
-	# hist(w2$Wdata, breaks = 200)
-	# getParetoThreshold(w2)
-
-# Threshold checks
-	check <- epiClassify(w2,.5)
-	summary(check)
-	check <- getPairs(check, show = "links", single.rows = TRUE)
-	check %>% filter(Weight >.65) %>% tail
-	hist(check$Weight, breaks = 40)
-
-# Match threshold choice
-	matches2 <- epiClassify(w2,.7)
-	matches2 <- getPairs(matches2, show = "links", single.rows = TRUE)
-
-		glimpse(matches2)
-		head(matches2)
-		hist(matches2$Weight, breaks = 40)
-
-### Reduce duplicated id2
-	matches2 <- matches2 %>% arrange(id1) %>% filter(!duplicated(id2))
-
-
-### Merge with link file (matches on existing links and adds new ones)
-	link <- full_join(link, matches2 %>% select(pid2.1,pid2.2, ssn_dob1y_rlwt=Weight))
-	head(link)
-
-# ==========================================================================
-# RL3 - fname, lname, dob1_y, dob1_m, dob1_d
-# ==========================================================================
-
-	RL3 <- compare.dedup(df_sub,
-			blockfld = c("fname", "lname", "dob1_y", "dob1_m", "dob1_d"),
+			blockfld = c("lname", "dob_y", "dob1_m", "dob1_d"),
 	  		strcmp = c( # "dob_d",
 	  					# "dob_m",
 	  					# "dob_y",
 	  					"ssn",
-	  					# "fname",
+	  					"fname",
 	  					"mname",
 	  					# "lname",
 	  					"suf"),
 	  		phonetic = c("lname", "fname", "mname"),
 	  		phonfun = soundex,
-	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","dob_dq","dob", "dob_d", "dob_m", "dob_y"))
+	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","dob_dq","dob", "dob_d", "dob_m", "dob1_y","ssn1"))
 
 # epiWeigts
-	w3 <- epiWeights(RL3)
-
-# Threshold plots
-	# hist(w3$Wdata, breaks = 100)
-	# getParetoThreshold(w3)
-
-# Threshold checks
-	check <- epiClassify(w3,.5)
-	summary(check)
-	check <- getPairs(check, single.rows = TRUE)
-	check %>% filter(Weight >.59) %>% tail(10)
-	hist(check$Weight, breaks = 40)
+	w2 <- epiWeights(RL2)
 
 # Match threshold choice
-	matches3 <- epiClassify(w3,.65)
-	matches3 <- getPairs(matches3, show = "links", single.rows = TRUE)
+	matches2 <- epiClassify(w2,.1)
+	matches2 <- getPairs(matches2, show = "links", single.rows = TRUE)
 
-		glimpse(matches3)
-		head(matches3)
-		hist(matches3$Weight, breaks = 40)
-
-### Reduce duplicated id3
-	matches3 <- matches3 %>% arrange(id1) %>% filter(!duplicated(id2))
+### Reduce duplicated id2
+	matches2 <- matches2 %>% arrange(id1) %>% filter(!duplicated(id2))
 
 
 ### Merge link file
-	link <- full_join(link, matches3 %>% select(pid2.1,pid2.2, name_dob1_rlwt=Weight))
+	link <- full_join(link, matches2 %>% select(pid2.1,pid2.2, lname_dobwt=Weight))
 	head(link)
 
 # ==========================================================================
-# RL4 - fname, dob_y, dob_m
+# RL3 - fname, dob_y, dob_m
 # ==========================================================================
 
-	RL4 <- compare.dedup(df_sub,
-			blockfld = c("fname", "dob_y", "dob_m"),
-	  		strcmp = c( "dob_d",
-	  					# "dob_m",
+	RL3 <- compare.dedup(df_sub,
+			blockfld = c("fname", "dob_y", "dob1_m"),
+	  		strcmp = c( "dob1_d",
+	  					# "dob1_m",
 	  					# "dob_y",
 	  					"ssn",
 	  					# "fname",
@@ -308,38 +246,158 @@
 	  					"suf"),
 	  		phonetic = c("lname", "fname", "mname"),
 	  		phonfun = soundex,
-	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq", "dob_dq","dob1", "dob1_d", "dob1_m", "dob1_y"))
+	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq", "dob_dq","dob1", "dob_d", "dob_m", "dob1_y","ssn1"))
 
 # epiWeigts
-	w4 <- epiWeights(RL4)
-
-# Threshold plots
-	# hist(w4$Wdata, breaks = 100)
-	# getParetoThreshold(w4)
-
-# Threshold checks
-	check <- epiClassify(w4,.5)
-	summary(check)
-	check <- getPairs(check, single.rows = TRUE)
-	check %>% filter(Weight >.7) %>% tail
-	hist(check$Weight, breaks = 40)
+	w3 <- epiWeights(RL3)
 
 # Match threshold choice
-	matches4 <- epiClassify(w4,.7)
-	matches4 <- getPairs(matches4, show = "links", single.rows = TRUE)
+	matches3 <- epiClassify(w3,.1)
+	matches3 <- getPairs(matches3, show = "links", single.rows = TRUE)
 
-		glimpse(matches4)
-		head(matches4)
-		hist(matches4$Weight, breaks = 40)
-
-### Reduce duplicated id4
-	matches4 <- matches4 %>% arrange(id1) %>% filter(!duplicated(id2))
-
+### Reduce duplicated id3
+	matches3 <- matches3 %>% arrange(id1) %>% filter(!duplicated(id2))
 
 ### Merge link file
-	link <- full_join(link, matches4 %>% select(pid2.1,pid2.2, fname_dob_rlwt=Weight))
+	link <- full_join(link, matches3 %>% select(pid2.1,pid2.2, fname_dobwt=Weight))
 	head(link)
 	dim(link)
+
+# ==========================================================================
+# Create product weights
+# ==========================================================================
+
+	test <- link %>%
+		mutate_at(vars(ends_with("wt")), funs(ifelse(is.na(.)==T, 0.0, .))) %>%
+		select(ends_with("wt")) #%>%
+		# replace(is.na(.), 0) %>%
+		# head(50)
+
+	c <- test %>%
+		mutate(wt = apply(.,1,
+			function(p,w)
+			(1-prod((1-p)^1))^(1/sum(1))
+			))
+
+		hist(c$wt, breaks=50)
+
+# ==========================================================================
+# TESTBED - DO NOT RUN
+# ==========================================================================
+
+			test %>%
+		rowwise() %>%
+		mutate(wt = prod(1-ssn_dobywt))
+
+	test %>%
+		mutate(wt = apply(.,1,function(x) prod(1-x) ))
+
+	t1 <- function(df,p,w){
+		1-(prod((1 - df$p) ^ w)) ^ 1/(sum(w))
+	}
+	apply(test,1,t1(df=test,w=1))
+
+	test %>%
+		mutate(wt = apply(.,1,funs(t1)))
+
+1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1) # 0.5181292
+1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1) # 0.9917620
+
+
+(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
+
+
+
+	for(i in ncol(test)){
+		p[i] = 1-
+	}
+
+	test %>%
+		rowwise() %>%
+		mutate(wt = apply(.,2,sum)) %>%
+		head
+
+
+
+
+
+	wtp <- function(df,select){
+			p <- select(df,select)
+			w <- c(NA)
+			df <- df %>% mutate(wtp = p)
+		}
+	t1(test,select="ssn.1")
+
+
+			for(i in ncol(p)){
+
+			}
+	}
+
+	check <- t1(test,)
+
+	t1(vars=select(test,ends_with("wt")))
+
+			for(i in ncol(p))
+				{
+					1-(prod((1 - pi) ^ wi)) ^ 1/(sum(wi))
+				}
+
+	}
+
+	wtp <- function(p,i,w) {
+		i = select(.,vars)
+		w =
+		prod(1-p)
+	}
+
+	test %>%
+	group_by(pid2.1,pid2.2) %>%
+	mutate(v = wtp(x=select(.,ends_with("wt")))) %>%
+	head
+
+
+	mutate(v = (prod((1 - select(.,ends_with("wt"))) ^ 1)) ^ 1/(sum(1)))
+
+	prod(1-select(test,ends_with("wt")))
+
+	mwt_fun <- function(i,p,w)
+	{
+		(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
+	}
+
+		)
+
+	link %>% select(ends_with("wt")) %>%
+	mutate_at(vars(ends_with("wt")),
+			  funs(ifelse(is.na(.)==T, 0, .))) %>%
+	rowwise() %>%
+	mutate(mwt =  weighted.mean(.,c(1,1,1))) %>% head
+
+	 ^ 1)) ^ 1/(sum(1))) %>%
+		head
+
+
+
+	### Create weighting function
+	pr <- function(group, p, w){
+		print(. %>%
+		group_by(group) %>%
+		mutate(wt = (1 - (apply(1-p, prod)^w)^(1/sum(w)))) %>%
+		apply(1-p, prod)
+		ungroup()
+
+}
+
+%>%
+	group_by(pid2.1, pid2.2) %>%
+	mutate(wt = (1-(prod(1-ssn_rlwt)^.5)^(1/sum(.5))))
+	  # mutate(wt = (1 - prod(1-.5,1 - .7)^1) ^ (1/sum(1))))
+	# mutate(wt = (1 - (apply(ssn_rlwt,1,prod)^.5)^(1/sum(.5))))
+
+# ==========================================================================
+# END TESTBED
+# ==========================================================================
 
 # ==========================================================================
 # Save link file
@@ -350,3 +408,93 @@
 # ==========================================================================
 # End Code
 # ==========================================================================
+
+
+# # ==========================================================================
+# # RL2 - SSN1, DOB_Y
+# # ==========================================================================
+# 	RL2 <- compare.dedup(df_sub,
+# 			blockfld = c("ssn1", "dob1_y"),
+# 	  		strcmp = c( "dob1_d",
+# 	  					"dob1_m",
+# 	  					# "dob_y",
+# 	  					# "ssn",
+# 	  					"fname",
+# 	  					"mname",
+# 	  					"lname",
+# 	  					"suf"),
+# 	  		phonetic = c("lname", "fname", "mname"),
+# 	  		phonfun = soundex,
+# 	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob_y"))
+
+# # epiWeigts
+# 	w2 <- epiWeights(RL2)
+
+# # Threshold plots
+# 	# hist(w2$Wdata, breaks = 200)
+# 	# getParetoThreshold(w2)
+
+# # Threshold checks
+# 	check <- epiClassify(w2,.5)
+# 	summary(check)
+# 	check <- getPairs(check, show = "links", single.rows = TRUE)
+# 	check %>% filter(Weight >.65) %>% tail
+# 	hist(check$Weight, breaks = 40)
+
+# # Match threshold choice
+# 	matches2 <- epiClassify(w2,.7)
+# 	matches2 <- getPairs(matches2, show = "links", single.rows = TRUE)
+
+# 		glimpse(matches2)
+# 		head(matches2)
+# 		hist(matches2$Weight, breaks = 40)
+
+# ### Reduce duplicated id2
+# 	matches2 <- matches2 %>% arrange(id1) %>% filter(!duplicated(id2))
+
+
+# ### Merge with link file (matches on existing links and adds new ones)
+# 	link <- full_join(link, matches2 %>% select(pid2.1,pid2.2, ssn_dob1y_rlwt=Weight))
+# 	head(link)
+
+
+# # Threshold plots
+# 	# hist(w1$Wdata, breaks = 200)
+# 	# getParetoThreshold(w1)
+
+# # Threshold checks
+# 	check <- epiClassify(w1,.1)
+# 	summary(check)
+# 	check <- getPairs(check, show = "links", single.rows = TRUE)
+# 	check %>% filter(Weight >.6) %>% select(pid0.1:dob.1, pid0.2:dob.2) %>% tail
+# 	# hist(check$Weight, breaks = 40)
+
+# Threshold plots
+	# hist(w2$Wdata, breaks = 100)
+	# getParetoThreshold(w2)
+
+# Threshold checks
+	# check <- epiClassify(w2,.5)
+	# summary(check)
+	# check <- getPairs(check, single.rows = TRUE)
+	# check %>% filter(Weight >.59) %>% tail(10)
+	# hist(check$Weight, breaks = 40)
+
+
+		# glimpse(matches2)
+		# head(matches2)
+		# hist(matches2$Weight, breaks = 40)
+# Threshold plots
+	# hist(w3$Wdata, breaks = 100)
+	# getParetoThreshold(w3)
+
+# Threshold checks
+	# check <- epiClassify(w3,.5)
+	# summary(check)
+	# check <- getPairs(check, single.rows = TRUE)
+	# check %>% filter(Weight >.7) %>% tail
+	# hist(check$Weight, breaks = 40)
+
+	# 	glimpse(matches3)
+	# 	head(matches3)
+	# 	hist(matches3$Weight, breaks = 30)
