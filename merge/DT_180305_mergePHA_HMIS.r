@@ -156,7 +156,7 @@
 	####
 
 # ==========================================================================
-# RL1 - SSN & DOB_Y
+# RL1 - SSN
 # Block on quality ssn's using df w/o "Refused" names
 # Logic: Match on quality SSN's and the DOB year, however, strcmp on month
 # 		and days not in the "bad" "01-01" DOB onject above.
@@ -192,12 +192,12 @@
 	matches1 <- matches1 %>% arrange(id1) %>% filter(!duplicated(id2))
 
 ### Create link file
-	link <- matches1 %>% select(ssn.1:ssn_dq.1,pid0.1,pid1.1,pid2.1,pid2.2, ssn_dobywt=Weight)
+	link <- matches1 %>% select(ssn.1:ssn_dq.1,pid0.1,pid1.1,pid2.1,pid2.2, ssn_wt=Weight)
 	head(link)
 	dim(link)
 
 # ==========================================================================
-# RL2 - fname, lname, dob1_y, dob1_m, dob1_d
+# RL2 - lname, dob1_y, dob1_m, dob1_d
 # Logic: lnames, original DOB year, and good DOB month and day
 # ==========================================================================
 
@@ -277,13 +277,25 @@
 		# replace(is.na(.), 0) %>%
 		# head(50)
 
-	c <- test %>%
-		mutate(wt = apply(.,1,
-			function(p,w)
-			(1-prod((1-p)^1))^(1/sum(1))
-			))
 
-		hist(c$wt, breaks=50)
+### SUCCESS ###
+
+	wtp <- function(p,weights){
+			1-prod((1-p)^weights)^(1/sum(weights))
+		}
+
+	apply(test,1,wtp, weights=c(1,.5,.5)) %>% head
+	apply(test,1,wtp, weights=1) %>% head
+
+
+### check
+1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1)^(1/sum(1)) # 0.5181292
+1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1)^(1/sum(1)) # 0.9917620
+
+1-prod((1-0.5181292)^1,(1-0.0000000)^.5,(1-0.0000000)^.5)^(1/sum(1,.5,.5))#0.3058309
+1-prod((1-0.8088310)^1,(1-0.8090377)^.5,(1-0.7743397)^.5)^(1/sum(1,.5,.5))#0.8007908
+1-prod((1-0.8273135)^1,(1-0.8090377)^.5,(1-0.7743397)^.5)^(1/sum(1,.5,.5))#0.8106654
+1-prod((1-0.8115079)^1,(1-0.0000000)^.5,(1-0.7556824)^.5)^(1/sum(1,.5,.5))#0.6947643
 
 		#
 		# LEFT OFF - need to figure out how to make weight inputs
@@ -504,3 +516,61 @@
 	# 	glimpse(matches3)
 	# 	head(matches3)
 	# 	hist(matches3$Weight, breaks = 30)
+
+### progress 1 - all weights = 1
+	p1 <- test %>%
+		mutate(wt = apply(.,1,
+			function(p,w)
+			# w = 1
+			(1-prod((1-p)^1))^(1/sum(1))
+			))
+
+		hist(p1$wt, breaks=50)
+		p1 %>% filter(wt >.5) %>% tail
+
+### progress 2
+
+	wtp2 <- function(p,w)
+			for(i in ncol(df)){
+				for(k in length(w)){
+					wt <- 1-((prod((1 - p[i]) ^ w[k])) ^ 1/(sum(w[k])))
+					wt
+				}
+			}
+
+		p2 <- apply(test,1,wtp2, w=c(1,.5,.5))
+		head(p2)
+
+### progress 3
+
+
+	wtp3 <- function(p,w){
+		for(i in nrows(df)){
+			wt[i] <- (1-prod((1-p)^w[i]))^(1/sum(w[i]))
+		}
+	}
+
+	w <- c(1,.5,.5)
+	p3 <- apply(test,1,wtp3, w=c(1,.5,.5))
+	p3
+
+### progress 4
+
+	wtp4 <- function(p,w)
+			for(i in nrow(df)){
+				for(k in length(w)){
+					wt[i] <- 1-((prod((1 - p) ^ w[k])) ^ 1/(sum(w[k])))
+				}
+			}
+
+		p4 <- apply(test,1,wtp4, w=c(1,.5,.5), df = test)
+		head(p4)
+
+m = NULL
+check <- function(x){
+	for(i in nrow(df)){
+		m[i] <- mean(x)
+	}
+}
+
+### progress 5
