@@ -267,6 +267,10 @@
 # Create product weights
 # ==========================================================================
 
+# ==========================================================================
+# TESTBED - DO NOT RUN
+# ==========================================================================
+
 	test <- link %>%
 		mutate_at(vars(ends_with("wt")), funs(ifelse(is.na(.)==T, 0.0, .))) %>%
 		select(ends_with("wt")) #%>%
@@ -281,117 +285,119 @@
 
 		hist(c$wt, breaks=50)
 
-# ==========================================================================
-# TESTBED - DO NOT RUN
-# ==========================================================================
+		#
+		# LEFT OFF - need to figure out how to make weight inputs
+		#
 
-			test %>%
-		rowwise() %>%
-		mutate(wt = prod(1-ssn_dobywt))
+#### TRASH BELOW ####
 
-	test %>%
-		mutate(wt = apply(.,1,function(x) prod(1-x) ))
+# 			test %>%
+# 		rowwise() %>%
+# 		mutate(wt = prod(1-ssn_dobywt))
 
-	t1 <- function(df,p,w){
-		1-(prod((1 - df$p) ^ w)) ^ 1/(sum(w))
-	}
-	apply(test,1,t1(df=test,w=1))
+# 	test %>%
+# 		mutate(wt = apply(.,1,function(x) prod(1-x) ))
 
-	test %>%
-		mutate(wt = apply(.,1,funs(t1)))
+# 	t1 <- function(df,p,w){
+# 		1-(prod((1 - df$p) ^ w)) ^ 1/(sum(w))
+# 	}
+# 	apply(test,1,t1(df=test,w=1))
 
-1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1) # 0.5181292
-1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1) # 0.9917620
+# 	test %>%
+# 		mutate(wt = apply(.,1,funs(t1)))
 
-
-(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
-
+# 1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1) # 0.5181292
+# 1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1) # 0.9917620
 
 
-	for(i in ncol(test)){
-		p[i] = 1-
-	}
-
-	test %>%
-		rowwise() %>%
-		mutate(wt = apply(.,2,sum)) %>%
-		head
+# (prod((1 - p) ^ wi)) ^ 1/(sum(wi))
 
 
 
+# 	for(i in ncol(test)){
+# 		p[i] = 1-
+# 	}
 
-
-	wtp <- function(df,select){
-			p <- select(df,select)
-			w <- c(NA)
-			df <- df %>% mutate(wtp = p)
-		}
-	t1(test,select="ssn.1")
-
-
-			for(i in ncol(p)){
-
-			}
-	}
-
-	check <- t1(test,)
-
-	t1(vars=select(test,ends_with("wt")))
-
-			for(i in ncol(p))
-				{
-					1-(prod((1 - pi) ^ wi)) ^ 1/(sum(wi))
-				}
-
-	}
-
-	wtp <- function(p,i,w) {
-		i = select(.,vars)
-		w =
-		prod(1-p)
-	}
-
-	test %>%
-	group_by(pid2.1,pid2.2) %>%
-	mutate(v = wtp(x=select(.,ends_with("wt")))) %>%
-	head
-
-
-	mutate(v = (prod((1 - select(.,ends_with("wt"))) ^ 1)) ^ 1/(sum(1)))
-
-	prod(1-select(test,ends_with("wt")))
-
-	mwt_fun <- function(i,p,w)
-	{
-		(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
-	}
-
-		)
-
-	link %>% select(ends_with("wt")) %>%
-	mutate_at(vars(ends_with("wt")),
-			  funs(ifelse(is.na(.)==T, 0, .))) %>%
-	rowwise() %>%
-	mutate(mwt =  weighted.mean(.,c(1,1,1))) %>% head
-
-	 ^ 1)) ^ 1/(sum(1))) %>%
-		head
+# 	test %>%
+# 		rowwise() %>%
+# 		mutate(wt = apply(.,2,sum)) %>%
+# 		head
 
 
 
-	### Create weighting function
-	pr <- function(group, p, w){
-		print(. %>%
-		group_by(group) %>%
-		mutate(wt = (1 - (apply(1-p, prod)^w)^(1/sum(w)))) %>%
-		apply(1-p, prod)
-		ungroup()
 
-}
 
-%>%
-	group_by(pid2.1, pid2.2) %>%
-	mutate(wt = (1-(prod(1-ssn_rlwt)^.5)^(1/sum(.5))))
+# 	wtp <- function(df,select){
+# 			p <- select(df,select)
+# 			w <- c(NA)
+# 			df <- df %>% mutate(wtp = p)
+# 		}
+# 	t1(test,select="ssn.1")
+
+
+# 			for(i in ncol(p)){
+
+# 			}
+# 	}
+
+# 	check <- t1(test,)
+
+# 	t1(vars=select(test,ends_with("wt")))
+
+# 			for(i in ncol(p))
+# 				{
+# 					1-(prod((1 - pi) ^ wi)) ^ 1/(sum(wi))
+# 				}
+
+# 	}
+
+# 	wtp <- function(p,i,w) {
+# 		i = select(.,vars)
+# 		w =
+# 		prod(1-p)
+# 	}
+
+# 	test %>%
+# 	group_by(pid2.1,pid2.2) %>%
+# 	mutate(v = wtp(x=select(.,ends_with("wt")))) %>%
+# 	head
+
+
+# 	mutate(v = (prod((1 - select(.,ends_with("wt"))) ^ 1)) ^ 1/(sum(1)))
+
+# 	prod(1-select(test,ends_with("wt")))
+
+# 	mwt_fun <- function(i,p,w)
+# 	{
+# 		(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
+# 	}
+
+# 		)
+
+# 	link %>% select(ends_with("wt")) %>%
+# 	mutate_at(vars(ends_with("wt")),
+# 			  funs(ifelse(is.na(.)==T, 0, .))) %>%
+# 	rowwise() %>%
+# 	mutate(mwt =  weighted.mean(.,c(1,1,1))) %>% head
+
+# 	 ^ 1)) ^ 1/(sum(1))) %>%
+# 		head
+
+
+
+# 	### Create weighting function
+# 	pr <- function(group, p, w){
+# 		print(. %>%
+# 		group_by(group) %>%
+# 		mutate(wt = (1 - (apply(1-p, prod)^w)^(1/sum(w)))) %>%
+# 		apply(1-p, prod)
+# 		ungroup()
+
+# }
+
+# %>%
+# 	group_by(pid2.1, pid2.2) %>%
+# 	mutate(wt = (1-(prod(1-ssn_rlwt)^.5)^(1/sum(.5))))
 	  # mutate(wt = (1 - prod(1-.5,1 - .7)^1) ^ (1/sum(1))))
 	# mutate(wt = (1 - (apply(ssn_rlwt,1,prod)^.5)^(1/sum(.5))))
 
