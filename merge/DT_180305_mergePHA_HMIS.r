@@ -39,10 +39,6 @@
 		data.frame(table(hmis$DOB)) %>% arrange(desc(Freq)) %>% head(80)
 		bad_dob <- c("1980-01-01", "1970-01-01", "1982-01-01", "1990-01-01", "1985-01-01", "1975-01-01", "1981-01-01", "1978-01-01", "1983-01-01", "1986-01-01", "1960-01-01", "1979-01-01", "1972-01-01", "1988-01-01", "1989-01-01", "1984-01-01", "2009-01-01", "2010-01-01", "1968-01-01", "1965-01-01", "1974-01-01", "1987-01-01", "1969-01-01", "1977-01-01", "1971-01-01", "1967-01-01", "2011-01-01", "1976-01-01", "2007-01-01", "1961-01-01", "1963-01-01", "1973-01-01", "2008-01-01", "1964-01-01", "1991-01-01", "1966-01-01", "1962-01-01", "2006-01-01", "2004-01-01", "2012-01-01", "2005-01-01", "1992-01-01", "2000-01-01", "1959-01-01", "1958-01-01", "2003-01-01", "2001-01-01", "1994-01-01", "1993-01-01", "2002-01-01", "1995-01-01", "1999-01-01", "1996-01-01", "1957-01-01", "1955-01-01", "2013-01-01", "1998-01-01", "1956-01-01", "1997-01-01", "1954-01-01", "2014-01-01", "1950-01-01", "1953-01-01", "1952-01-01", "2015-01-01", "1951-01-01", "1949-01-01", "1948-01-01", "1947-01-01", "1945-01-01", "2016-01-01", "1946-01-01", "1900-01-01", "1943-01-01", "1901-01-01", "1944-01-01", "1940-01-01", "1942-01-01", "1941-01-01", "1935-01-01", "1939-01-01", "1938-01-01", "1932-01-01", "1934-01-01", "1933-01-01", "1930-01-01")
 
-		# ==========================================================================
-		# Test for Jan 1...
-		# ==========================================================================
-
 # subset PHA
 	pha.rl <- pha %>%
 		select(pid0 = pid0,
@@ -267,310 +263,33 @@
 # Create product weights
 # ==========================================================================
 
-# ==========================================================================
-# TESTBED - DO NOT RUN
-# ==========================================================================
+### change NA to 0
+	link <- link %>%
+		mutate_at(vars(ends_with("wt")), funs(ifelse(is.na(.)==T, 0.0, .)))
 
-	test <- link %>%
-		mutate_at(vars(ends_with("wt")), funs(ifelse(is.na(.)==T, 0.0, .))) %>%
-		select(ends_with("wt")) #%>%
-		# replace(is.na(.), 0) %>%
-		# head(50)
-
-
-### SUCCESS ###
-
+### function
 	wtp <- function(p,weights){
 			1-prod((1-p)^weights)^(1/sum(weights))
 		}
 
-	apply(test,1,wtp, weights=c(1,.5,.5)) %>% head
-	apply(test,1,wtp, weights=1) %>% head
+### Different weighting scenerios
+	w1 <- link %>%
+		mutate(wtp = apply( # apply function across rows
+							select(., ends_with("wt")), # select columns to apply to
+							1, # w/in each row (2 would do it w/in each col)
+							wtp, # function to apply
+							weights=1) # weights argument
+						)
+	w2 <- link %>% mutate(wtp = apply(select(., ends_with("wt")),1,wtp, weights=c(1,.8,.8)))
+	w3 <- link %>% mutate(wtp = apply(select(., ends_with("wt")),1,wtp, weights=c(1,.5,.5)))
 
-
-### check
-1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1)^(1/sum(1)) # 0.5181292
-1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1)^(1/sum(1)) # 0.9917620
-
-1-prod((1-0.5181292)^1,(1-0.0000000)^.5,(1-0.0000000)^.5)^(1/sum(1,.5,.5))#0.3058309
-1-prod((1-0.8088310)^1,(1-0.8090377)^.5,(1-0.7743397)^.5)^(1/sum(1,.5,.5))#0.8007908
-1-prod((1-0.8273135)^1,(1-0.8090377)^.5,(1-0.7743397)^.5)^(1/sum(1,.5,.5))#0.8106654
-1-prod((1-0.8115079)^1,(1-0.0000000)^.5,(1-0.7556824)^.5)^(1/sum(1,.5,.5))#0.6947643
-
-		#
-		# LEFT OFF - need to figure out how to make weight inputs
-		#
-
-#### TRASH BELOW ####
-
-# 			test %>%
-# 		rowwise() %>%
-# 		mutate(wt = prod(1-ssn_dobywt))
-
-# 	test %>%
-# 		mutate(wt = apply(.,1,function(x) prod(1-x) ))
-
-# 	t1 <- function(df,p,w){
-# 		1-(prod((1 - df$p) ^ w)) ^ 1/(sum(w))
-# 	}
-# 	apply(test,1,t1(df=test,w=1))
-
-# 	test %>%
-# 		mutate(wt = apply(.,1,funs(t1)))
-
-# 1-prod((1-0.5181292)^1, (1-0.0000000)^1, (1-0.0000000)^1) # 0.5181292
-# 1-prod((1-0.8088310)^1, (1-0.8090377)^1, (1-0.7743397)^1) # 0.9917620
-
-
-# (prod((1 - p) ^ wi)) ^ 1/(sum(wi))
-
-
-
-# 	for(i in ncol(test)){
-# 		p[i] = 1-
-# 	}
-
-# 	test %>%
-# 		rowwise() %>%
-# 		mutate(wt = apply(.,2,sum)) %>%
-# 		head
-
-
-
-
-
-# 	wtp <- function(df,select){
-# 			p <- select(df,select)
-# 			w <- c(NA)
-# 			df <- df %>% mutate(wtp = p)
-# 		}
-# 	t1(test,select="ssn.1")
-
-
-# 			for(i in ncol(p)){
-
-# 			}
-# 	}
-
-# 	check <- t1(test,)
-
-# 	t1(vars=select(test,ends_with("wt")))
-
-# 			for(i in ncol(p))
-# 				{
-# 					1-(prod((1 - pi) ^ wi)) ^ 1/(sum(wi))
-# 				}
-
-# 	}
-
-# 	wtp <- function(p,i,w) {
-# 		i = select(.,vars)
-# 		w =
-# 		prod(1-p)
-# 	}
-
-# 	test %>%
-# 	group_by(pid2.1,pid2.2) %>%
-# 	mutate(v = wtp(x=select(.,ends_with("wt")))) %>%
-# 	head
-
-
-# 	mutate(v = (prod((1 - select(.,ends_with("wt"))) ^ 1)) ^ 1/(sum(1)))
-
-# 	prod(1-select(test,ends_with("wt")))
-
-# 	mwt_fun <- function(i,p,w)
-# 	{
-# 		(prod((1 - p) ^ wi)) ^ 1/(sum(wi))
-# 	}
-
-# 		)
-
-# 	link %>% select(ends_with("wt")) %>%
-# 	mutate_at(vars(ends_with("wt")),
-# 			  funs(ifelse(is.na(.)==T, 0, .))) %>%
-# 	rowwise() %>%
-# 	mutate(mwt =  weighted.mean(.,c(1,1,1))) %>% head
-
-# 	 ^ 1)) ^ 1/(sum(1))) %>%
-# 		head
-
-
-
-# 	### Create weighting function
-# 	pr <- function(group, p, w){
-# 		print(. %>%
-# 		group_by(group) %>%
-# 		mutate(wt = (1 - (apply(1-p, prod)^w)^(1/sum(w)))) %>%
-# 		apply(1-p, prod)
-# 		ungroup()
-
-# }
-
-# %>%
-# 	group_by(pid2.1, pid2.2) %>%
-# 	mutate(wt = (1-(prod(1-ssn_rlwt)^.5)^(1/sum(.5))))
-	  # mutate(wt = (1 - prod(1-.5,1 - .7)^1) ^ (1/sum(1))))
-	# mutate(wt = (1 - (apply(ssn_rlwt,1,prod)^.5)^(1/sum(.5))))
+	head(w1) # weights all at 1
+	head(w2) # weights at 1, .5, & .5
+	head(w3) # weights at 1, .8, & .8
+	hist(w1$wt, breaks = 40)
+	hist(w2$wt, breaks = 40)
+	hist(w3$wt, breaks = 40)
 
 # ==========================================================================
-# END TESTBED
+# End code
 # ==========================================================================
-
-# ==========================================================================
-# Save link file
-# ==========================================================================
-	write.csv(df, "~/data/Housing/OrganizedData/Links/NameList.csv")
-	write.csv(link, "~/data/Housing/OrganizedData/Links/PHA_HMISLinks.csv")
-
-# ==========================================================================
-# End Code
-# ==========================================================================
-
-
-# # ==========================================================================
-# # RL2 - SSN1, DOB_Y
-# # ==========================================================================
-# 	RL2 <- compare.dedup(df_sub,
-# 			blockfld = c("ssn1", "dob1_y"),
-# 	  		strcmp = c( "dob1_d",
-# 	  					"dob1_m",
-# 	  					# "dob_y",
-# 	  					# "ssn",
-# 	  					"fname",
-# 	  					"mname",
-# 	  					"lname",
-# 	  					"suf"),
-# 	  		phonetic = c("lname", "fname", "mname"),
-# 	  		phonfun = soundex,
-# 	  		exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob_y"))
-
-# # epiWeigts
-# 	w2 <- epiWeights(RL2)
-
-# # Threshold plots
-# 	# hist(w2$Wdata, breaks = 200)
-# 	# getParetoThreshold(w2)
-
-# # Threshold checks
-# 	check <- epiClassify(w2,.5)
-# 	summary(check)
-# 	check <- getPairs(check, show = "links", single.rows = TRUE)
-# 	check %>% filter(Weight >.65) %>% tail
-# 	hist(check$Weight, breaks = 40)
-
-# # Match threshold choice
-# 	matches2 <- epiClassify(w2,.7)
-# 	matches2 <- getPairs(matches2, show = "links", single.rows = TRUE)
-
-# 		glimpse(matches2)
-# 		head(matches2)
-# 		hist(matches2$Weight, breaks = 40)
-
-# ### Reduce duplicated id2
-# 	matches2 <- matches2 %>% arrange(id1) %>% filter(!duplicated(id2))
-
-
-# ### Merge with link file (matches on existing links and adds new ones)
-# 	link <- full_join(link, matches2 %>% select(pid2.1,pid2.2, ssn_dob1y_rlwt=Weight))
-# 	head(link)
-
-
-# # Threshold plots
-# 	# hist(w1$Wdata, breaks = 200)
-# 	# getParetoThreshold(w1)
-
-# # Threshold checks
-# 	check <- epiClassify(w1,.1)
-# 	summary(check)
-# 	check <- getPairs(check, show = "links", single.rows = TRUE)
-# 	check %>% filter(Weight >.6) %>% select(pid0.1:dob.1, pid0.2:dob.2) %>% tail
-# 	# hist(check$Weight, breaks = 40)
-
-# Threshold plots
-	# hist(w2$Wdata, breaks = 100)
-	# getParetoThreshold(w2)
-
-# Threshold checks
-	# check <- epiClassify(w2,.5)
-	# summary(check)
-	# check <- getPairs(check, single.rows = TRUE)
-	# check %>% filter(Weight >.59) %>% tail(10)
-	# hist(check$Weight, breaks = 40)
-
-
-		# glimpse(matches2)
-		# head(matches2)
-		# hist(matches2$Weight, breaks = 40)
-# Threshold plots
-	# hist(w3$Wdata, breaks = 100)
-	# getParetoThreshold(w3)
-
-# Threshold checks
-	# check <- epiClassify(w3,.5)
-	# summary(check)
-	# check <- getPairs(check, single.rows = TRUE)
-	# check %>% filter(Weight >.7) %>% tail
-	# hist(check$Weight, breaks = 40)
-
-	# 	glimpse(matches3)
-	# 	head(matches3)
-	# 	hist(matches3$Weight, breaks = 30)
-
-### progress 1 - all weights = 1
-	p1 <- test %>%
-		mutate(wt = apply(.,1,
-			function(p,w)
-			# w = 1
-			(1-prod((1-p)^1))^(1/sum(1))
-			))
-
-		hist(p1$wt, breaks=50)
-		p1 %>% filter(wt >.5) %>% tail
-
-### progress 2
-
-	wtp2 <- function(p,w)
-			for(i in ncol(df)){
-				for(k in length(w)){
-					wt <- 1-((prod((1 - p[i]) ^ w[k])) ^ 1/(sum(w[k])))
-					wt
-				}
-			}
-
-		p2 <- apply(test,1,wtp2, w=c(1,.5,.5))
-		head(p2)
-
-### progress 3
-
-
-	wtp3 <- function(p,w){
-		for(i in nrows(df)){
-			wt[i] <- (1-prod((1-p)^w[i]))^(1/sum(w[i]))
-		}
-	}
-
-	w <- c(1,.5,.5)
-	p3 <- apply(test,1,wtp3, w=c(1,.5,.5))
-	p3
-
-### progress 4
-
-	wtp4 <- function(p,w)
-			for(i in nrow(df)){
-				for(k in length(w)){
-					wt[i] <- 1-((prod((1 - p) ^ w[k])) ^ 1/(sum(w[k])))
-				}
-			}
-
-		p4 <- apply(test,1,wtp4, w=c(1,.5,.5), df = test)
-		head(p4)
-
-m = NULL
-check <- function(x){
-	for(i in nrow(df)){
-		m[i] <- mean(x)
-	}
-}
-
-### progress 5
