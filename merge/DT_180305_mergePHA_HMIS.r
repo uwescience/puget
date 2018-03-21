@@ -142,6 +142,95 @@
 	####
 
 # ==========================================================================
+# Function Creation
+# ==========================================================================
+
+### Link function
+	rlink <- function(df,blockfld, strcmp, phonetic, phonfun, exclude, threshold){ 
+
+		if(!require(RecordLinkage)){
+			    install.packages("RecordLinkage")
+			    require(RecordLinkage)
+			}
+		if(!require(dplyr)){
+			    install.packages("dplyr")
+			    require(dplyr)
+			}
+		RL <- df %>% 
+				compare.dedup(.,
+				  blockfld = blockfld,
+				  strcmp = strcmp[!strcmp %in% blockfld ],
+				  phonetic = phonetic,
+				  phonfun = phonfun,
+				  exclude = exclude) %>% 
+				epiWeights(.) %>% 
+				epiClassify(.,threshold) %>% 
+				getPairs(., show = "links", single.rows = TRUE) %>% 
+		### Reduce duplicated id2
+				arrange(id1) %>% 
+				filter(!duplicated(id2)) %>% 
+				select(ssn.1:ssn_dq.1,
+						pid0.1,
+						pid1.1,
+						pid2.1,
+						pid2.2, 
+						ssn_wt=Weight) 
+		return(RL)
+	}
+
+### Weighting function
+	wtp <- function(p,weights){
+			1-prod((1-p)^weights)^(1/sum(weights))
+		}
+
+# ==========================================================================
+# Record Linkages
+# ==========================================================================
+
+strcmp <- c( "ssn1","dob1_d","dob1_m","dob_y","fname","mname","lname","suf")
+exclude <- names(df_sub)[!names(df_sub) %in% strcmp]
+### SSN ###
+	ssn <- rlink(df = df_sub,
+			blockfld = "ssn1", 
+			strcmp = , 
+			phonetic = c("lname", 
+						 "fname", 
+						 "mname"), 
+			phonfun = soundex, 
+			exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob1_y"), 
+			threshold = .1
+			)
+	glimpse(ssn)
+
+### SSN ###
+	dob_d <- rlink(df = df_sub,
+		`	blockfld = "dob_d1", 
+			strcmp = c( "ssn1",
+						#"dob1_d",
+	  					"dob1_m",
+	  					"dob_y",
+	  					"ssn1",
+	  					"fname",
+	  					"mname",
+	  					"lname",
+	  					"suf"), 
+			phonetic = c("lname", 
+						 "fname", 
+						 "mname"), 
+			phonfun = soundex, 
+			exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob1_y"), 
+			threshold = .1
+			)
+	glimpse(ssn)
+
+
+mtcars %>%
+  split(.$cyl) %>% # from base R
+  map(~ lm(mpg ~ wt, data = .)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")
+
+# ==========================================================================
 # RL1 - SSN
 # Block on quality ssn's using df w/o "Refused" names
 # Logic: Match on quality SSN's and the DOB year, however, strcmp on month
@@ -264,11 +353,6 @@
 ### change NA to 0
 	link <- link %>%
 		mutate_at(vars(ends_with("wt")), funs(ifelse(is.na(.)==T, 0.0, .)))
-
-### function
-	wtp <- function(p,weights){
-			1-prod((1-p)^weights)^(1/sum(weights))
-		}
 
 ### Different weighting scenerios
 	w1 <- link %>%
