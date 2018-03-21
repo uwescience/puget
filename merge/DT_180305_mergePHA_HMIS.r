@@ -167,6 +167,7 @@
 				epiClassify(.,threshold) %>% 
 				getPairs(., show = "links", single.rows = TRUE) %>% 
 		### Reduce duplicated id2
+			# Consider automating this below
 				arrange(id1) %>% 
 				filter(!duplicated(id2)) %>% 
 				select(ssn.1:ssn_dq.1,
@@ -187,20 +188,27 @@
 # Record Linkages
 # ==========================================================================
 
-strcmp <- c( "ssn1","dob1_d","dob1_m","dob_y","fname","mname","lname","suf")
-exclude <- names(df_sub)[!names(df_sub) %in% strcmp]
+s <- c( "ssn1","dob1_d","dob1_m","dob_y","fname","mname","lname","suf")
+ex <- names(df_sub)[!names(df_sub) %in% s]
+p <- c("lname", "fname", "mname")
 ### SSN ###
-	ssn <- rlink(df = df_sub,
+	ssn_rl <- rlink(df = df_sub,
 			blockfld = "ssn1", 
-			strcmp = , 
-			phonetic = c("lname", 
-						 "fname", 
-						 "mname"), 
+			strcmp = s, 
+			phonetic = p, 
 			phonfun = soundex, 
-			exclude = c("pid0", "pid1", "pid2", "dob", "ssn_dq","ssn","dob_dq","dob", "dob_d", "dob_m", "dob1_y"), 
+			exclude = ex, 
 			threshold = .1
 			)
-	glimpse(ssn)
+	glimpse(ssn_rl)
+
+
+
+
+# ==========================================================================
+# DO NOT RUN BELOW
+# ==========================================================================
+
 
 ### SSN ###
 	dob_d <- rlink(df = df_sub,
