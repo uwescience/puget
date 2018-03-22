@@ -94,7 +94,7 @@
 
 # Change "" to NA
 	hmis.rl[hmis.rl==""] <- NA
-# Mutate dob to date
+# Mutate dob to dateo
 	hmis.rl <- hmis.rl %>%
 		mutate(dob=ymd(dob))
 
@@ -110,7 +110,7 @@
 							 ssn == as.numeric(paste(rep(6,9),collapse="")) |
 							 ssn == as.numeric(paste(rep(7,9),collapse="")) |
 							 ssn == as.numeric(paste(rep(8,9),collapse="")) |
-							 ssn == as.numeric(paste(rep(9,9),collapse="")), 3, ssn_dq)
+							 ssn == as.numeric(paste(rep(9,9),collapse="")), 3, ssn_dq) 
 				) %>%
 		mutate(pid2 = paste("pid2_", str_pad(seq(1, nrow(.)),6,pad='0'),sep = ""),
 				ssn1 = ifelse(ssn_dq==1 & nchar(ssn)==9, ssn, NA),
