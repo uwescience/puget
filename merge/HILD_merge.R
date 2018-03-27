@@ -197,6 +197,7 @@
 						pid0.1,
 						pid0.2,
 						pid1.1,
+						pid1.2,
 						pid2.1,
 						pid2.2,
 						Weight) %>%
@@ -208,6 +209,7 @@
 	}
 
 gc()
+
 # ==========================================================================
 # Record Linkages
 # ==========================================================================
@@ -255,6 +257,7 @@ gc()
 				   pid0.1,
 				   pid0.2,
 				   pid1.1,
+				   pid1.2,
 				   pid2.1,
 				   pid2.2,
 				   ends_with("_wt"))
@@ -344,20 +347,25 @@ glimpse(link)
 	test_df <- head(df_sub,100)
 	# s <- c( "ssn1","dob1_d","dob1_m","dob_y","fname","mname","lname","suf")
 	s <- c( "ssn1","fname","mname","lname")
-	ex <- names(df_sub)[!names(df_sub) %in% s]
+	# ex <- names(df_sub)[!names(df_sub) %in% s]
 	p <- c("lname", "fname", "mname")
 
 ### SSN ###
-	for(i in 1:length(s)){
+
+rl <- lapply(test_df, function(rlink) c(df = test_df,block = s[i], string = s, phonetic = p))
+### SSN ### - kinda works
+	for(i in s){
 	rl <- as.list(NULL)
-	rl[i] <- list(rlink(df = test_df,
-			blockfld = i,
-			strcmp = s,
-			phonetic = p,
-			threshold = .1
+	rl[[i]] <- list(rlink(df = test_df,
+			block = i,
+			string = s,
+			phonetic = p
 			))
+
    }
+
 rl
+rm(rl)
 	glimpse(ssn_rl)
 
 
