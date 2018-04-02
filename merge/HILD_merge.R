@@ -133,7 +133,7 @@
 				dob1_y = year(dob1),
 				dob1_m = month(dob1),
 				dob1_d = day(dob1)) %>%
-			distinct()
+		distinct()
 
 ### Subset out refuesed names
 	df_sub <- df %>% filter(!grepl("REFUSED",lname),
@@ -226,16 +226,30 @@ gc()
 			))
 	gc()
 
-### flname RL
+### fname RL
 	system.time(
-		rl_flname <- rlink(df = df_sub,
-			block = c("fname","lname"),
+		rl_fname <- rlink(df = df_sub,
+			block = c("fname"),
 			string = s,
 			phonetic = p,
 			threshold = .1,
-			name_wt = "flname_wt"
+			name_wt = "fname_wt"
 			))
 	gc()
+
+### lname RL
+	system.time(
+		rl_lname <- rlink(df = df_sub,
+			block = c("lname"),
+			string = s,
+			phonetic = p,
+			threshold = .1,
+			name_wt = "lname_wt"
+			))
+	gc()`
+
+	### NOTES:
+	# Seperate, first and last
 
 # ==========================================================================
 # Create link df
@@ -259,7 +273,13 @@ gc()
 				   ends_with("_wt")))
 
 	link <- full_join(link,
-					  rl_flname %>%
+					  rl_fname %>%
+			select(pid2.1,
+				   pid2.2,
+				   ends_with("_wt")))
+
+	link <- full_join(link,
+					  rl_lname %>%
 			select(pid2.1,
 				   pid2.2,
 				   ends_with("_wt")))
@@ -284,20 +304,20 @@ glimpse(link)
 ### Different weighting scenerios
 	w1 <- link %>%
 		mutate(wtp111 = apply( # apply function across rows
-							select(., ends_with("wt")), # select columns to apply to
-							1, # w/in each row (2 would do it w/in each col)
-							wtp, # function to apply
-							weights=c(1,1,1)), # weights argument
-				wtp1.8.8 = apply( # apply function across rows
-							select(., ends_with("wt")), # select columns to apply to
-							1, # w/in each row (2 would do it w/in each col)
-							wtp, # function to apply
-							weights=c(1,.8,.8)), # weights argument
-				wtp1.5.5 = apply( # apply function across rows
-							select(., ends_with("wt")), # select columns to apply to
-							1, # w/in each row (2 would do it w/in each col)
-							wtp, # function to apply
-							weights=c(1,.5,.5)) # weights argument
+						select(., ends_with("wt")), # select columns to apply to
+						1, # w/in each row (2 would do it w/in each col)
+						wtp, # function to apply
+						weights=c(1,1,1)), # weights argument
+			   wtp1.8.8 = apply( # apply function across rows
+						select(., ends_with("wt")), # select columns to apply to
+						1, # w/in each row (2 would do it w/in each col)
+						wtp, # function to apply
+						weights=c(1,.8,.8)), # weights argument
+			   wtp1.5.5 = apply( # apply function across rows
+						select(., ends_with("wt")), # select columns to apply to
+						1, # w/in each row (2 would do it w/in each col)
+						wtp, # function to apply
+						weights=c(1,.5,.5)) # weights argument
 						)
 
 	head(w1) # weights all at 1
