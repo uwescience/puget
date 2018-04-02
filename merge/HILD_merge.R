@@ -7,7 +7,7 @@
 	options(max.print = 10000,
 		    tibble.print_max = 100,
 		    scipen = 999,
-		    width = 90,
+		    width = 78,
 		    error = traceback)
 	gc()
 
@@ -197,6 +197,10 @@
 		return(RL)
 	}
 
+	#
+	# Edit: add ssn's and other info for .2's
+	#
+
 gc()
 
 # ==========================================================================
@@ -246,10 +250,7 @@ gc()
 			threshold = .1,
 			name_wt = "lname_wt"
 			))
-	gc()`
-
-	### NOTES:
-	# Seperate, first and last
+	gc()
 
 # ==========================================================================
 # Create link df
@@ -291,7 +292,8 @@ gc()
 					  	   0.0,
 					  	   .))
 					  )
-glimpse(link)
+	glimpse(link)
+
 # ==========================================================================
 # Create product weights
 # ==========================================================================
@@ -307,17 +309,17 @@ glimpse(link)
 						select(., ends_with("wt")), # select columns to apply to
 						1, # w/in each row (2 would do it w/in each col)
 						wtp, # function to apply
-						weights=c(1,1,1)), # weights argument
+						weights=c(1,1,1,1)), # weights argument
 			   wtp1.8.8 = apply( # apply function across rows
 						select(., ends_with("wt")), # select columns to apply to
 						1, # w/in each row (2 would do it w/in each col)
 						wtp, # function to apply
-						weights=c(1,.8,.8)), # weights argument
+						weights=c(1,.8,.8,.8)), # weights argument
 			   wtp1.5.5 = apply( # apply function across rows
 						select(., ends_with("wt")), # select columns to apply to
 						1, # w/in each row (2 would do it w/in each col)
 						wtp, # function to apply
-						weights=c(1,.5,.5)) # weights argument
+						weights=c(1,.5,.5,.5)) # weights argument
 						)
 
 	head(w1) # weights all at 1
@@ -328,7 +330,9 @@ glimpse(link)
 # ==========================================================================
 # Save file
 # ==========================================================================
-	write.csv(w1, "data/Housing/links/WeightedLinks_20180327.csv")
+
+	write.csv(w1, "data/Housing/links/WeightedLinks_20180402.csv")
+	write.csv(df_sub, "data/Housing/links/PreLinkData_20180402.csv")
 
 # ==========================================================================
 # ==========================================================================
@@ -337,6 +341,7 @@ glimpse(link)
 # ==========================================================================
 # ==========================================================================
 # ==========================================================================
+
 
 # 	df_sub2 <- df_sub[(is.na(df_sub$ssn1)) &
 # 					  (is.na(df_sub$dob1_d)) &
