@@ -233,7 +233,7 @@ gc()
 			string = s,
 			phonetic = p,
 			threshold = .1,
-			name_wt = "flsname_wt"
+			name_wt = "flname_wt"
 			))
 	gc()
 
