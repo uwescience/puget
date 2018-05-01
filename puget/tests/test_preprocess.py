@@ -8,7 +8,8 @@ import pandas.util.testing as pdt
 import numpy as np
 import tempfile
 import json
-from nose.tools import assert_equal, assert_raises
+from numpy.testing import assert_equal
+import pytest
 
 
 def test_std_path_setup():
@@ -80,11 +81,13 @@ def test_read_table():
     temp_csv_file.close()
 
     # test error checking
-    assert_raises(ValueError, pp.read_table, file_spec,
-                  data_dir=op.join(pp.DATA_PATH, 'king'))
+    with pytest.raises(ValueError):
+        pp.read_table(file_spec,
+                      data_dir=op.join(pp.DATA_PATH, 'king'))
 
     # test error checking
-    assert_raises(ValueError, pp.read_table, 'test', data_dir=None, paths=None)
+    with pytest.raises(ValueError):
+        pp.read_table('test', data_dir=None, paths=None)
 
 
 def test_read_entry_exit():
@@ -130,8 +133,9 @@ def test_read_entry_exit():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pp.read_entry_exit_table, file_spec=file_spec,
-                  metadata=temp_meta_file2.name)
+    with pytest.raises(ValueError):
+        pp.read_entry_exit_table(file_spec=file_spec,
+                                 metadata=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
@@ -358,9 +362,11 @@ def test_get_client():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pp.get_client,
-                  file_spec=file_spec, data_dir=None, paths=None,
-                  metadata_file=temp_meta_file2.name)
+    with pytest.raises(ValueError):
+        pp.get_client(file_spec=file_spec,
+                      data_dir=None,
+                      paths=None,
+                      metadata_file=temp_meta_file2.name)
 
     temp_csv_file1.close()
     temp_csv_file2.close()
@@ -418,9 +424,10 @@ def test_get_disabilities():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pp.get_disabilities, file_spec=file_spec,
-                  data_dir=None, paths=None,
-                  metadata_file=temp_meta_file2.name)
+    with pytest.raises(ValueError):
+        pp.get_disabilities(file_spec=file_spec,
+                            data_dir=None, paths=None,
+                            metadata_file=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
@@ -556,9 +563,10 @@ def test_get_income():
     metadata_json = json.dumps(metadata)
     temp_meta_file2.file.write(metadata_json)
     temp_meta_file2.seek(0)
-    assert_raises(ValueError, pp.get_income, file_spec=file_spec,
-                  data_dir=None, paths=None,
-                  metadata_file=temp_meta_file2.name)
+    with pytest.raises(ValueError):
+        pp.get_income(file_spec=file_spec,
+                      data_dir=None, paths=None,
+                      metadata_file=temp_meta_file2.name)
 
     temp_csv_file.close()
     temp_meta_file.close()
@@ -783,7 +791,8 @@ def test_merge():
                                                              '2011-12-05',
                                                              '2011-09-10']),
                                 'DestinationNumeric': [12., 27., 20, 10],
-                                'DestinationDescription': ['Staying or living with family, temporary tenure (e.g., room, apartment or house)',
+                                'DestinationDescription': [
+                                    'Staying or living with family, temporary tenure (e.g., room, apartment or house)',
                                                            'Moved from one HOPWA funded project to HOPWA TH',
                                                            'Rental by client, with other ongoing housing subsidy',
                                                            'Rental by client, no ongoing housing subsidy'],

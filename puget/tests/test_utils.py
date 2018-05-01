@@ -3,7 +3,6 @@ import puget
 import os.path as op
 import pandas as pd
 import pandas.util.testing as pdt
-import numpy as np
 import tempfile
 
 
