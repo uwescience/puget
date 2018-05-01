@@ -69,7 +69,7 @@ def update_progress(progress):
     progress : a value (float or int) between 0 and 100 indicating
                percentage progress
     """
-    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress))
+    print('\r[%-10s] %0.2f%%' % ('#' * int(progress / 10), progress))
 
 
 def clean_ssn(ssn):
@@ -83,7 +83,6 @@ def clean_ssn(ssn):
     # There might be some other conditions here.
     else:
         return ssn
-
 
 
 def stringify_ssn(ssn):
