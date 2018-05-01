@@ -69,3 +69,5 @@ def link_records(prelink_ids):
 
     ix = prelink_ids["linkage_PID"].isnull() 
     prelink_ids.loc[ix, "linkage_PID"] = np.arange(new_pid, new_pid + ix.sum())
+
+    return prelink_ids
