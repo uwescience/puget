@@ -128,30 +128,30 @@ def test_linkage():
 
 
 
-    # prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1", "HMIS0_2"],
-    #                                    'ssn_as_str':['123456789', '123456789', ],
-    #                                    'lname':["QWERT", "QWERT", "ASDF"],
-    #                                     'fname':["QWERT", "QWERT", "ASDF"],
-    #                                     'dob':["1990-02-01", "1990-02-01", "1977-03-04"]})
-    #
-    # prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
-    # prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
-    # linked = link_records(prelink_ids)
-    # test_df["linkage_PID"] = [1, 1, 2]
-    # pdt.assert_frame_equal(test_df, linked)
-
-
     # One item doesn't match:
     prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1", "HMIS0_2"],
                                        'ssn_as_str':['123456789', '123456789', "123456789"],
-                                       'lname':["QWERT", "QWERT", "QWERT"],
+                                       'lname':["QWERT", "QWERT", "ASDF"],
                                         'fname':["QWERT", "QWERT", "QWERT"],
                                         'dob':["1990-02-01", "1990-02-01", "1990-02-01"]})
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     linked = link_records(prelink_ids, link_list)
-    test_df = prelink_ids
+    test_df = prelink_ids.copy()
     test_df["linkage_PID"] = [1, 1, 2]
+    pdt.assert_frame_equal(test_df, linked)
+
+    # Reducing the threshold for matching, this gets matched nonetheless:
+    prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1", "HMIS0_2"],
+                                       'ssn_as_str':['123456789', '123456789', "123456789"],
+                                       'lname':["QWERT", "QWERT", "ASDF"],
+                                        'fname':["QWERT", "QWERT", "QWERT"],
+                                        'dob':["1990-02-01", "1990-02-01", "1990-02-01"]})
+
+    prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
+    linked = link_records(prelink_ids, link_list, match_threshold=1)
+    test_df = prelink_ids.copy()
+    test_df["linkage_PID"] = [1, 1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
 
