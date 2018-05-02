@@ -30,7 +30,8 @@ def block_and_match(df, block_variable, comparison_dict, match_threshold=2,
     return features
 
 
-def link_records(prelink_ids, link_list):
+def link_records(prelink_ids, link_list, match_threshold=2,
+                 string_method="jarowinkler", string_threshold=0.85):
     """
     Link records from a dataset, using an iterative approach
 
@@ -58,7 +59,10 @@ def link_records(prelink_ids, link_list):
     for link in link_list:
         features = block_and_match(prelink_ids,
                                    link['block_variable'],
-                                   link['match_variables'])
+                                   link['match_variables'],
+                                   match_threshold=match_threshold,
+                                   string_method=string_method,
+                                   string_threshold=string_threshold)
         matches.append(features[features["match"]])
 
     G = networkx.Graph()
