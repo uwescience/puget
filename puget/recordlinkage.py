@@ -30,36 +30,40 @@ def block_and_match(df, block_variable, comparison_dict, match_threshold=2,
     return features
 
 
-def link_records(prelink_ids):
+def link_records(prelink_ids, link_list):
     """
-    Link records in the union dataset
+    Link records from a dataset, using an iterative approach
+
+    Parameters
+    ----------
+    prelink_ids : DataFrame
+        A Pandas DataFrame with prelinked data.
+
+    link_list : list of dicts:
+            [{'block_variable': 'lname',
+              'match_variables':{"fname": "string",
+                                  "ssn_as_str": "string",
+                                  "dob":"date"}},
+            {'block_variable': 'fname',
+              'match_variables':{"lname": "string",
+                                  "ssn_as_str": "string",
+                                  "dob":"date"}},
+            {'block_variable': 'ssn_as_str',
+              'match_variables':{"fname": "string",
+                                  "lname": "string",
+                                  "dob":"date"}}]
 
     """
-    features_lname = block_and_match(prelink_ids,
-                                     "lname",
-                                     {"fname": "string",
-                                      "ssn_as_str": "string",
-                                      "dob":"date"})
-
-    features_fname = block_and_match(prelink_ids,
-                                     "lname",
-                                     {"fname": "string",
-                                      "ssn_as_str": "string",
-                                      "dob":"date"})
-
-    features_ssn = block_and_match(prelink_ids,
-                                   "ssn_as_str",
-                                     {"fname": "string",
-                                      "lname": "string",
-                                      "dob":"date"})
-
-    matches_lname = features_lname[features_lname["match"]]
-    matches_fname = features_fname[features_fname["match"]]
-    matches_ssn = features_ssn[features_ssn["match"]]
+    matches = []
+    for link in link_list:
+        features = block_and_match(prelink_ids,
+                                   link['block_variable'],
+                                   link['match_variables'])
+        matches.append(features[features["match"]])
 
     G = networkx.Graph()
-    for matches in [matches_lname, matches_fname, matches_ssn]:
-        for ix, row in matches.iterrows():
+    for match in matches:
+        for ix, row in match.iterrows():
             G.add_edge(row.name[0], row.name[1])
 
     prelink_ids["linkage_PID"] = np.nan

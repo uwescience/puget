@@ -4,6 +4,18 @@ import pandas.util.testing as pdt
 from puget.recordlinkage import link_records
 
 def test_linkage():
+    link_list = [{'block_variable': 'lname',
+                  'match_variables': {"fname": "string",
+                                      "ssn_as_str": "string",
+                                      "dob": "date"}},
+                 {'block_variable': 'fname',
+                  'match_variables': {"lname": "string",
+                                      "ssn_as_str": "string",
+                                      "dob": "date"}},
+                 {'block_variable': 'ssn_as_str',
+                  'match_variables': {"fname": "string",
+                                      "lname": "string",
+                                      "dob": "date"}}]
 
     # Simplest case - both items are identical in all respects:
     prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1"],
@@ -14,7 +26,7 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
@@ -27,7 +39,7 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 2]
     pdt.assert_frame_equal(test_df, linked)
 
@@ -41,7 +53,7 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 2]
     pdt.assert_frame_equal(test_df, linked)
 
@@ -54,7 +66,7 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 2]
     pdt.assert_frame_equal(test_df, linked)
 
@@ -69,11 +81,36 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
+    test_df["linkage_PID"] = [1, 1]
+    pdt.assert_frame_equal(test_df, linked)
+
+    # Items differ by permutation in their first name
+    prelink_ids = pd.DataFrame(data={'pid0': ["PHA0_1", "HMIS0_1"],
+                                     'ssn_as_str': ['123456789', '123456789'],
+                                     'lname': ["QWERT", "QWERT"],
+                                     'fname': ["QWERT", "QEWRT"],
+                                     'dob': ["1990-02-01", "1990-02-01"]})
+
+    prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
+    test_df = prelink_ids.copy()
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
 
+    # Items differ by permutation in their dob day/month
+    prelink_ids = pd.DataFrame(data={'pid0': ["PHA0_1", "HMIS0_1"],
+                                     'ssn_as_str': ['123456789', '123456789'],
+                                     'lname': ["QWERT", "QWERT"],
+                                     'fname': ["QWERT", "QEWRT"],
+                                     'dob': ["1990-01-02", "1990-02-01"]})
+
+    prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
+    test_df = prelink_ids.copy()
+    linked = link_records(prelink_ids, link_list)
+    test_df["linkage_PID"] = [1, 1]
+    pdt.assert_frame_equal(test_df, linked)
 
 
     # One item is not linked:
@@ -85,7 +122,7 @@ def test_linkage():
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df["linkage_PID"] = [1, 1, 2]
     pdt.assert_frame_equal(test_df, linked)
 
@@ -112,7 +149,7 @@ def test_linkage():
                                         'dob':["1990-02-01", "1990-02-01", "1990-02-01"]})
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
-    linked = link_records(prelink_ids)
+    linked = link_records(prelink_ids, link_list)
     test_df = prelink_ids
     test_df["linkage_PID"] = [1, 1, 2]
     pdt.assert_frame_equal(test_df, linked)
