@@ -1,4 +1,4 @@
-[# ==========================================================================
+# ==========================================================================
 # PHA and HMIS merge
 # Tim Thomas - t77@uw.edu
 # ==========================================================================
@@ -195,24 +195,24 @@
 		ex <- names(df)[!names(df) %in% string]
 		RL <- df %>%
 				compare.dedup(.,
-				  blockfld = block,
-				  strcmp = string[!string %in% block],
-				  phonetic = phonetic,
-				  phonfun = phonfun,
-				  exclude = ex) %>%
+				  			  blockfld = block,
+				  			  strcmp = string[!string %in% block],
+				  			  phonetic = phonetic,
+				  			  phonfun = phonfun,
+				  			  exclude = ex) %>%
 				epiWeights(.) %>%
 				epiClassify(.,threshold) %>%
 				getPairs(., show = "links", single.rows = TRUE) %>%
 				arrange(id1) %>%
 				filter(!duplicated(id2)) %>% # reduce duplicated id's
 				select(ssn.1:ssn_dq.1,
-						pid0.1,
-						pid0.2,
-						pid1.1,
-						pid1.2,
-						pid2.1,
-						pid2.2,
-						Weight) %>%
+					   pid0.1,
+					   pid0.2,
+					   pid1.1,
+					   pid1.2,
+					   pid2.1,
+					   pid2.2,
+					   Weight) %>%
 				rename_(.dots = setNames("Weight", name_wt))
 
 		return(RL)
@@ -320,6 +320,12 @@
 			# 1-prod((1-p)^w)^(1/sum(w))
 			1-(prod((1-p)^w))^(1/(sum(w)))
 		}
+
+link %>%
+	slice(1) %>%
+
+
+	wtp(p = c(0.6322425, 0.0000000,0.6322425,0.6322425,0.5277509), w = c(1,1,1,1))
 
 ### Different weighting scenerios
 	w1 <- link %>%
