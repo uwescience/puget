@@ -193,7 +193,6 @@
 					  name_wt = paste0(block,"_wt")){
 
 		ex <- names(df)[!names(df) %in% string]
-		# name <- paste0(block, '_wt')
 		RL <- df %>%
 				compare.dedup(.,
 				  blockfld = block,
@@ -204,10 +203,8 @@
 				epiWeights(.) %>%
 				epiClassify(.,threshold) %>%
 				getPairs(., show = "links", single.rows = TRUE) %>%
-		### Reduce duplicated id2
-			# Consider automating this below
 				arrange(id1) %>%
-				filter(!duplicated(id2)) %>%
+				filter(!duplicated(id2)) %>% # reduce duplicated id's
 				select(ssn.1:ssn_dq.1,
 						pid0.1,
 						pid0.2,
@@ -216,7 +213,6 @@
 						pid2.1,
 						pid2.2,
 						Weight) %>%
-				# rename_(.dots = setNames("Weight", paste0(block, "_wt")))
 				rename_(.dots = setNames("Weight", name_wt))
 
 		return(RL)
