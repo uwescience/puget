@@ -48,7 +48,7 @@
 				   arrange(desc(Freq)) %>%
 				   filter(year(dob) > 2018 |
 						  year(dob) < 1900 |
-						  Freq >= 64) %>%
+						  Freq >= 64) %>% # about the freq of bad jan 1 dob's
 				   arrange(desc(dob)) %>%
 				   pull(1)
 
@@ -58,7 +58,7 @@
 					arrange(desc(Freq)) %>%
 					filter(year(dob) > 2018 |
 						   year(dob) < 1900 |
-						   Freq >= 81) %>%
+						   Freq >= 81) %>% # about the freq of bad jan 1 dob's
 					arrange(desc(dob)) %>%
 					pull(1)
 
