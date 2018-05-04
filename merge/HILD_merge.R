@@ -321,12 +321,6 @@
 			1-(prod((1-p)^w))^(1/(sum(w)))
 		}
 
-link %>%
-	slice(1) %>%
-
-
-	wtp(p = c(0.6322425, 0.0000000,0.6322425,0.6322425,0.5277509), w = c(1,1,1,1))
-
 ### Different weighting scenerios
 	w1 <- link %>%
 		mutate(wtp1111 = apply( # apply function across rows
