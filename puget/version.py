@@ -60,7 +60,5 @@ MAJOR = _version_major
 MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
-PACKAGES = ['puget',
-            'puget.tests']
 PACKAGE_DATA = {'puget': [pjoin('data', '*')]}
 REQUIRES = ["numpy", "pandas"]
