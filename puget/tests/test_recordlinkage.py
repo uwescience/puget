@@ -40,7 +40,7 @@ def test_linkage():
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
     linked = link_records(prelink_ids, link_list)
-    test_df["linkage_PID"] = [1, 2]
+    test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
 
@@ -54,7 +54,7 @@ def test_linkage():
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
     linked = link_records(prelink_ids, link_list)
-    test_df["linkage_PID"] = [1, 2]
+    test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
     # Items differ completely in their SSN
@@ -67,7 +67,7 @@ def test_linkage():
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
     test_df = prelink_ids.copy()
     linked = link_records(prelink_ids, link_list)
-    test_df["linkage_PID"] = [1, 2]
+    test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
 
@@ -112,6 +112,19 @@ def test_linkage():
     test_df["linkage_PID"] = [1, 1]
     pdt.assert_frame_equal(test_df, linked)
 
+    # Items differ by a permutation in the last name + no ssn for one of them
+    prelink_ids = pd.DataFrame(data={'pid0': ["PHA0_1", "HMIS0_1"],
+                                     'ssn_as_str': ['123456789', np.nan],
+                                     'lname': ["QWERT", "QEWRT"],
+                                     'fname': ["QWERT", "QWERT"],
+                                     'dob': ["1990-01-02", "1990-01-02"]})
+
+    prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
+    test_df = prelink_ids.copy()
+    linked = link_records(prelink_ids, link_list)
+    test_df["linkage_PID"] = [1, 1]
+    pdt.assert_frame_equal(test_df, linked)
+
 
     # One item is not linked:
     prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1", "HMIS0_2"],
@@ -128,9 +141,9 @@ def test_linkage():
 
 
 
-    # One item doesn't match:
+    # One item doesn't match, but has two potential linkages:
     prelink_ids = pd.DataFrame(data = {'pid0':["PHA0_1", "HMIS0_1", "HMIS0_2"],
-                                       'ssn_as_str':['123456789', '123456789', "123456789"],
+                                       'ssn_as_str':['123456789', '123456789', "246801357"],
                                        'lname':["QWERT", "QWERT", "ASDF"],
                                         'fname':["QWERT", "QWERT", "QWERT"],
                                         'dob':["1990-02-01", "1990-02-01", "1990-02-01"]})
@@ -149,23 +162,7 @@ def test_linkage():
                                         'dob':["1990-02-01", "1990-02-01", "1990-02-01"]})
 
     prelink_ids["dob"] = pd.to_datetime(prelink_ids["dob"])
-    linked = link_records(prelink_ids, link_list, match_threshold=1)
+    linked = link_records(prelink_ids, link_list, match_threshold=0.1)
     test_df = prelink_ids.copy()
     test_df["linkage_PID"] = [1, 1, 1]
     pdt.assert_frame_equal(test_df, linked)
-
-
-
-
-    # prelink_ids = pd.DataFrame(
-    # data = {'pid0':["PHA0_1", "PHA0_2", "PHA0_3", "PHA0_4", "PHA0_5",
-    #          "HMIS0_1", "HMIS0_2", "HMIS0_3", "HMIS0_4", "HMIS0_5"],
-    # 'ssn_as_str':['123456789', np.nan, '135792468', '123456789', '123456789'
-    #               '123456789', '789012345', '123456789', 123456789, 123456789],
-    # 'lname':["QWERT", "YUIOP", "ASDFG", "HJKLZ", "XCVBN",
-    #          "QEWRT", "YUIO", "ASDFG", "HJKLZ", "QAZWS"],
-    # 'fname':["QWERT", "YUIOP", "ASDFG", "HJKLZ", "XCVBN",
-    #          "QWERT", "YUIO", "ASDFG", "HJKLZ", "QAZWS"],
-    # 'dob':["1990-02-01", "1990-02-01", "1990-02-01", "1990-02-01", "1990-02-01"
-    #        "1990-01-02", "1990-02-01", "1990-02-01", "1990-02-01", "1990-02-01"]})
-

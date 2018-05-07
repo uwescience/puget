@@ -6,8 +6,11 @@ import recordlinkage as rl
 import networkx
 
 
-def block_and_match(df, block_variable, comparison_dict, match_threshold=2,
-                    string_method="jarowinkler", string_threshold=0.85):
+MATCH_THRESHOLD = 0.5
+STRING_THRESHOLD = 0.85
+
+def block_and_match(df, block_variable, comparison_dict, match_threshold=MATCH_THRESHOLD,
+                    string_method="jarowinkler", string_threshold=STRING_THRESHOLD):
     """
     Use recordlinkage to block on one variable and compare on others
 
@@ -19,19 +22,20 @@ def block_and_match(df, block_variable, comparison_dict, match_threshold=2,
     for k, v in comparison_dict.items():
         if v == "string":
             compare.string(k, k, method=string_method,
-                           threshold=string_threshold, label=k)
+                           threshold=string_threshold, label=k,
+                           missing_value=np.nan)
         if v == "date":
-            compare.date(k, k, label=k)
+            compare.date(k, k, label=k, missing_value=np.nan)
 
     features = compare.compute(pairs, df)
-    features["sum"] = features.sum(axis=1)
-    features["match"] = features["sum"] > match_threshold
+    features["mean"] = features.mean(axis=1, skipna=True)
+    features["match"] = features["mean"] > match_threshold
 
     return features
 
 
-def link_records(prelink_ids, link_list, match_threshold=2,
-                 string_method="jarowinkler", string_threshold=0.85):
+def link_records(prelink_ids, link_list, match_threshold=MATCH_THRESHOLD,
+                 string_method="jarowinkler", string_threshold=STRING_THRESHOLD):
     """
     Link records from a dataset, using an iterative approach
 
