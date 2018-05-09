@@ -69,4 +69,28 @@ def update_progress(progress):
     progress : a value (float or int) between 0 and 100 indicating
                percentage progress
     """
-    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress))
+    print('\r[%-10s] %0.2f%%' % ('#' * int(progress / 10), progress))
+
+
+def clean_ssn(ssn):
+    """
+    Clean up corner cases for SSN values
+    """
+    # First case, SSN is 11111111, 22222222, etc.:
+    nulls = [11111111 * i for i in range(1, 9)]
+    if ssn in nulls:
+        return np.nan
+    # There might be some other conditions here.
+    else:
+        return ssn
+
+
+def stringify_ssn(ssn):
+    """
+    Create a string variable based on an SSN variable
+    """
+    if pd.isnull(ssn):
+        return None
+    else:
+        ssn_str = str(int(ssn))
+        return ssn_str
