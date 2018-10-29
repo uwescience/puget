@@ -826,8 +826,9 @@ get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
                                              metdata_boilerplate)
 
 
+
 def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
-                 paths=None, files=None, groups=True):
+                 paths=None, files=None, groups=True, clean_names=True):
     """ Run all functions that clean up raw tables separately, and merge them
         all into the enrollment table, where each row represents the project
         enrollment of an individual.
@@ -1052,4 +1053,36 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
             project_prid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(project_prid_column, axis=1)
 
+    if clean_names:
+        enroll_merge['exclude_by_name'] = enroll_merge.apply(_name_exclude, axis=1)
+        enroll_merge = enroll_merge[~enroll_merge["exclude_by_name"]]
+
     return enroll_merge
+
+
+def _has_digit(my_str):
+    return any(char.isdigit() for char in my_str)
+
+def _is_in_exclusion(my_str, exclusion_list):
+    for item in exclusion_list:
+        if item in my_str:
+            return True
+    return False
+
+def _name_exclude(row,
+                  exclusion_list=["consent", "refused", "anonymous", "client",
+                                  "refsued", "noname", "unknown"]):
+    """
+    Criteria for name exclusion
+    """
+    if isinstance(row["LastName"], (float, int)) or isinstance(row["FirstName"], (float, int)):
+        return True
+    first_name = row["FirstName"].lower().replace('.', '')
+    last_name = row["LastName"].lower().replace('.', '')
+    if _is_in_exclusion(first_name, exclusion_list) or _is_in_exclusion(last_name, exclusion_list):
+        return True
+    elif len(first_name) == 1 and len(last_name) == 1:
+        return True
+    elif _has_digit(first_name) or _has_digit(last_name):
+        return True
+    return False
