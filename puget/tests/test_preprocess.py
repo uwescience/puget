@@ -274,6 +274,8 @@ def test_get_client():
     temp_csv_file1 = tempfile.NamedTemporaryFile(mode='w')
     temp_csv_file2 = tempfile.NamedTemporaryFile(mode='w')
     df_init = pd.DataFrame({'id': [11, 12, 13, 15, 16, 17],
+                            'first_name':['AAA', 'BBB', 'CCC',
+                                          'EEE', 'FFF', 'noname'],
                             'dob_col': ['1990-01-13', '2012-05-21',
                                         '1850-06-14', '1965-11-22',
                                         '1948-09-03', '2012-03-18'],
@@ -282,7 +284,10 @@ def test_get_client():
                                          '1978-09-03', '2014-03-18'],
                             'bool_col': [1, 99, 1, 8, 0, 1],
                             'numeric': [99, 3, 6, 0, 8, np.NaN]})
+
     df2_init = pd.DataFrame({'id': [11, 12, 13, 14, 15, 16, 17, 18],
+                            'first_name':['AAA', 'BBB', 'CCC', 'DDD',
+                                          'EEE', 'FFF', 'noname', 'HHH'],
                              'dob_col': ['1990-01-15', '2012-05-21',
                                          '1850-06-14', '1975-12-08',
                                          '1967-11-22', pd.NaT, '2010-03-18',
@@ -302,54 +307,60 @@ def test_get_client():
 
     temp_meta_file = tempfile.NamedTemporaryFile(mode='w')
     metadata = ({'name': 'test', 'person_ID': 'id',
-                 'duplicate_check_columns': ['id', 'dob_col'],
+                 'duplicate_check_columns': ['id', 'dob_col', 'first_name'],
                  'columns_to_drop': [],
                  'categorical_var': ['bool_col', 'numeric'],
                  'time_var': ['dob_col', 'time_col'],
                  'boolean': ['bool_col'], 'numeric_code': ['numeric'],
-                 'dob_column': 'dob_col'})
+                 'dob_column': 'dob_col',
+                 'name_columns': ["first_name"]})
     metadata_json = json.dumps(metadata)
     temp_meta_file.file.write(metadata_json)
     temp_meta_file.seek(0)
+    for name_exclusion in [False, True]:
+        # get path & filenames
+        df = pp.get_client(file_spec=file_spec, data_dir=None, paths=None,
+                        metadata_file=temp_meta_file.name,
+                        name_exclusion=name_exclusion)
 
-    # get path & filenames
-    df = pp.get_client(file_spec=file_spec, data_dir=None, paths=None,
-                       metadata_file=temp_meta_file.name)
-
-    df_test = pd.DataFrame({'id': [11, 11, 12, 13, 14, 15, 15, 16, 16, 17, 17,
-                                   18],
-                            'dob_col': pd.to_datetime(['1990-01-13',
-                                                       '1990-01-15',
-                                                       '2012-05-21',
-                                                       '1850-06-14',
-                                                       '1975-12-08',
-                                                       '1965-11-22',
-                                                       '1967-11-22',
-                                                       '1948-09-03', pd.NaT,
-                                                       '2012-03-18',
-                                                       '2010-03-18',
-                                                       '2014-04-30']),
-                            'time_col': pd.to_datetime(['1996-01-14',
-                                                        '1996-01-14',
-                                                        '2014-05-21',
-                                                        '1950-06-14',
-                                                        '1995-12-08', pd.NaT,
-                                                        pd.NaT, '1978-09-03',
-                                                        '1978-09-03', pd.NaT,
-                                                        pd.NaT, '2015-04-30']),
-                            'bool_col': [1, 1, 0, 1, 0, np.NaN, np.NaN, 0, 0,
-                                         1, 1, 1],
-                            'numeric': [5, 5, 3, np.NaN, 1, 0, 0, np.NaN,
-                                        np.NaN, 6, 6, 0]})
-
-    # Have to sort & change the indexes to match
-    df = df.sort_values(by=['id', 'dob_col'])
-    df = df.reset_index(drop=True)
-    df_test = df_test.sort_values(by=['id', 'dob_col'])
-    df_test = df_test.reset_index(drop=True)
-    print(df.dtypes)
-    print(df_test.dtypes)
-    pdt.assert_frame_equal(df, df_test)
+        df_test = pd.DataFrame({'id': [11, 11, 12, 13, 14, 15, 15, 16, 16, 17, 17,
+                                    18],
+                                'first_name':['AAA', 'AAA', 'BBB', 'CCC', 'DDD',
+                                        'EEE', 'EEE', 'FFF', 'FFF', 'noname', 'noname',
+                                        'HHH'],
+                                'dob_col': pd.to_datetime(['1990-01-13',
+                                                        '1990-01-15',
+                                                        '2012-05-21',
+                                                        '1850-06-14',
+                                                        '1975-12-08',
+                                                        '1965-11-22',
+                                                        '1967-11-22',
+                                                        '1948-09-03', pd.NaT,
+                                                        '2012-03-18',
+                                                        '2010-03-18',
+                                                        '2014-04-30']),
+                                'time_col': pd.to_datetime(['1996-01-14',
+                                                            '1996-01-14',
+                                                            '2014-05-21',
+                                                            '1950-06-14',
+                                                            '1995-12-08', pd.NaT,
+                                                            pd.NaT, '1978-09-03',
+                                                            '1978-09-03', pd.NaT,
+                                                            pd.NaT, '2015-04-30']),
+                                'bool_col': [1, 1, 0, 1, 0, np.NaN, np.NaN, 0, 0,
+                                            1, 1, 1],
+                                'numeric': [5, 5, 3, np.NaN, 1, 0, 0, np.NaN,
+                                            np.NaN, 6, 6, 0]})
+        if name_exclusion:
+            df_test = df_test[~(df_test['first_name'] == 'noname')]
+        # Have to sort & change the indexes to match
+        df = df.sort_values(by=['id', 'dob_col'])
+        df = df.reset_index(drop=True)
+        df_test = df_test.sort_values(by=['id', 'dob_col'])
+        df_test = df_test.reset_index(drop=True)
+        print(df.dtypes)
+        print(df_test.dtypes)
+        pdt.assert_frame_equal(df, df_test)
 
     # test error checking
     temp_meta_file2 = tempfile.NamedTemporaryFile(mode='w')
@@ -607,7 +618,6 @@ def test_get_project():
 
 
 def test_merge():
-
     with tempfile.TemporaryDirectory() as temp_dir:
         year_str = '2011'
         paths = [year_str]
@@ -663,14 +673,21 @@ def test_merge():
                                           '2001-02-16', '2003-02-16',
                                           '1983-04-04', '1983-04-06'],
                                   'gender': [0, 0, 1, 1, 1, 1, 0, 0],
-                                  'veteran': [0, 0, 1, 1, 0, 0, 0, 0]})
+                                  'veteran': [0, 0, 1, 1, 0, 0, 0, 0],
+                                  'first_name':["AAA", "AAA",
+                                                "noname", "noname",
+                                                "CCC", "CCC",
+                                                "DDD", "DDD"]})
+
         client_metadata = {'name': 'client', 'person_ID': 'pid',
                            'dob_column': 'dob',
                            'time_var': ['dob'],
                            'categorical_var': ['gender', 'veteran'],
                            'boolean': ['veteran'],
                            'numeric_code': ['gender'],
-                           'duplicate_check_columns': ['pid', 'dob']}
+                           'duplicate_check_columns': ['pid', 'dob'],
+                           'name_columns' :["first_name"]}
+
         client_csv_file = op.join(dir_year, 'Client.csv')
         client_df.to_csv(client_csv_file, index=False)
         client_meta_file = op.join(dir_year, 'Client.json')
@@ -779,54 +796,59 @@ def test_merge():
                           'income': income_meta_file,
                           'project': project_meta_file}
 
-        df = pp.merge_tables(meta_files=metadata_files,
-                             data_dir=temp_dir, paths=paths, groups=False)
+        for name_exclusion in [False, True]:
 
-        df_test = pd.DataFrame({'personID': [1, 2, 3, 4],
-                                'person_enrollID': [10, 20, 30, 40],
-                                'programID': [100, 200, 200, 100],
-                                'groupID': [1000, 2000, 3000, 4000],
-                                'entrydate': pd.to_datetime(['2011-01-13',
-                                                             '2011-06-10',
-                                                             '2011-12-05',
-                                                             '2011-09-10']),
-                                'DestinationNumeric': [12., 27., 20, 10],
-                                'DestinationDescription': [
-                                    'Staying or living with family, temporary tenure (e.g., room, apartment or house)',
-                                                           'Moved from one HOPWA funded project to HOPWA TH',
-                                                           'Rental by client, with other ongoing housing subsidy',
-                                                           'Rental by client, no ongoing housing subsidy'],
-                                'DestinationGroup': ['Temporary', 'Temporary',
-                                                     'Permanent', 'Permanent'],
-                                'DestinationSuccess': ['Other Exit',
-                                                       'Other Exit',
-                                                       'Successful Exit',
-                                                       'Successful Exit'],
-                                'exitdate': pd.to_datetime(['2011-08-01',
-                                                            '2011-12-21',
-                                                            '2011-12-27',
-                                                            '2011-11-30']),
-                                'Subsidy': [False, False, True, False],
-                                'dob': pd.to_datetime(['1990-03-13',
-                                                       '1955-08-21', pd.NaT,
-                                                       '1983-04-05']),
-                                'gender': [0, 1, 1, 0],
-                                'veteran': [0, 1, 0, 0],
-                                'Physical_entry': [0, 1, 0, 0],
-                                'Physical_exit': [0, 1, 0, 1],
-                                'employed_entry': [0, 0, 1, 0],
-                                'employed_exit': [0, 1, 1, 1],
-                                'health_status_entry': [0, 0, 1, 0],
-                                'health_status_exit': [0, 1, 1, 1],
-                                'income_entry': [0, 0, 500, 0],
-                                'income_exit': [0, 1000, 400, 300],
-                                'ProjectNumeric': [1, 2, 2, 1],
-                                'ProjectType': ['Emergency Shelter',
-                                                'Transitional Housing',
-                                                'Transitional Housing',
-                                                'Emergency Shelter']})
+            df = pp.merge_tables(meta_files=metadata_files,
+                                data_dir=temp_dir, paths=paths, groups=False,
+                                name_exclusion=name_exclusion)
 
-        # sort because column order is not assured because started with dicts
-        df = df.sort_index(axis=1)
-        df_test = df_test.sort_index(axis=1)
-        pdt.assert_frame_equal(df, df_test)
+            df_test = pd.DataFrame({'personID': [1, 2, 3, 4],
+                                    'first_name':["AAA", "noname",
+                                                  "CCC", "DDD"],
+                                    'person_enrollID': [10, 20, 30, 40],
+                                    'programID': [100, 200, 200, 100],
+                                    'groupID': [1000, 2000, 3000, 4000],
+                                    'entrydate': pd.to_datetime(['2011-01-13',
+                                                                '2011-06-10',
+                                                                '2011-12-05',
+                                                                '2011-09-10']),
+                                    'DestinationNumeric': [12., 27., 20, 10],
+                                    'DestinationDescription': [
+                                        'Staying or living with family, temporary tenure (e.g., room, apartment or house)',
+                                                            'Moved from one HOPWA funded project to HOPWA TH',
+                                                            'Rental by client, with other ongoing housing subsidy',
+                                                            'Rental by client, no ongoing housing subsidy'],
+                                    'DestinationGroup': ['Temporary', 'Temporary',
+                                                        'Permanent', 'Permanent'],
+                                    'DestinationSuccess': ['Other Exit',
+                                                        'Other Exit',
+                                                        'Successful Exit',
+                                                        'Successful Exit'],
+                                    'exitdate': pd.to_datetime(['2011-08-01',
+                                                                '2011-12-21',
+                                                                '2011-12-27',
+                                                                '2011-11-30']),
+                                    'Subsidy': [False, False, True, False],
+                                    'dob': pd.to_datetime(['1990-03-13',
+                                                        '1955-08-21', pd.NaT,
+                                                        '1983-04-05']),
+                                    'gender': [0, 1, 1, 0],
+                                    'veteran': [0, 1, 0, 0],
+                                    'Physical_entry': [0, 1, 0, 0],
+                                    'Physical_exit': [0, 1, 0, 1],
+                                    'employed_entry': [0, 0, 1, 0],
+                                    'employed_exit': [0, 1, 1, 1],
+                                    'health_status_entry': [0, 0, 1, 0],
+                                    'health_status_exit': [0, 1, 1, 1],
+                                    'income_entry': [0, 0, 500, 0],
+                                    'income_exit': [0, 1000, 400, 300],
+                                    'ProjectNumeric': [1, 2, 2, 1],
+                                    'ProjectType': ['Emergency Shelter',
+                                                    'Transitional Housing',
+                                                    'Transitional Housing',
+                                                    'Emergency Shelter']})
+
+            # sort because column order is not assured because started with dicts
+            df = df.sort_index(axis=1)
+            df_test = df_test.sort_index(axis=1)
+            pdt.assert_frame_equal(df, df_test)

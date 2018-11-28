@@ -45,6 +45,10 @@ CATEGORICAL_UNKNOWN = [8, 9, 99]
 # entry/exit suffixes for columns
 ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
+# Names that should be excluded:
+NAME_EXCLUSION = ["consent", "refused", "anonymous", "client",
+                  "refsued", "noname", "unknown"]
+
 # dict of default metadata file names
 METADATA_FILES = {'enrollment': 'enrollment.json',
                   'exit': 'exit.json',
@@ -57,6 +61,7 @@ METADATA_FILES = {'enrollment': 'enrollment.json',
 
 for k, v in METADATA_FILES.items():
     METADATA_FILES[k] = op.join(DATA_PATH, 'metadata', v)
+
 
 file_path_boilerplate = (
     """
@@ -118,7 +123,7 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None, dedup=True,
-               encoding=None):
+               encoding=None, name_columns=None):
     """
     Read in any .csv table from multiple folders in the raw data.
 
@@ -444,7 +449,8 @@ get_exit.__doc__ = get_exit.__doc__ % (file_path_boilerplate,
 
 
 def get_client(county=None, file_spec=None, data_dir=None, paths=None,
-               metadata_file=METADATA_FILES['client']):
+               metadata_file=METADATA_FILES['client'],
+               name_exclusion=False):
     """
     Read in the raw Client tables.
 
@@ -558,6 +564,14 @@ def get_client(county=None, file_spec=None, data_dir=None, paths=None,
     #   info to determine if DOBs are sane
     df = df.drop_duplicates(duplicate_check_columns, keep='last',
                             inplace=False)
+
+    if name_exclusion:
+        name_cols = metadata.pop('name_columns')
+        df['exclude_by_name'] = df.apply(_name_exclude,
+                                        args=[name_cols, NAME_EXCLUSION],
+                                        axis=1)
+        df = df[~df["exclude_by_name"]]
+        df.drop(['exclude_by_name'], axis=1, inplace=True)
 
     return df
 
@@ -828,7 +842,7 @@ get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
 
 
 def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
-                 paths=None, files=None, groups=True, clean_names=True):
+                 paths=None, files=None, groups=True, name_exclusion=False):
     """ Run all functions that clean up raw tables separately, and merge them
         all into the enrollment table, where each row represents the project
         enrollment of an individual.
@@ -897,7 +911,9 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
     # Merge client in
     client = get_client(county=county, file_spec=files.get('client', None),
                         metadata_file=meta_files.get('client', None),
-                        data_dir=data_dir, paths=paths)
+                        data_dir=data_dir, paths=paths,
+                        name_exclusion=name_exclusion)
+
     print('client n_rows:', len(client))
     client_metadata = get_metadata_dict(meta_files.get('client',
                                         METADATA_FILES['client']))
@@ -1053,10 +1069,6 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
             project_prid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(project_prid_column, axis=1)
 
-    if clean_names:
-        enroll_merge['exclude_by_name'] = enroll_merge.apply(_name_exclude, axis=1)
-        enroll_merge = enroll_merge[~enroll_merge["exclude_by_name"]]
-
     return enroll_merge
 
 
@@ -1070,19 +1082,19 @@ def _is_in_exclusion(my_str, exclusion_list):
     return False
 
 def _name_exclude(row,
-                  exclusion_list=["consent", "refused", "anonymous", "client",
-                                  "refsued", "noname", "unknown"]):
+                  name_cols,
+                  exclusion_list=NAME_EXCLUSION):
     """
     Criteria for name exclusion
     """
-    if isinstance(row["LastName"], (float, int)) or isinstance(row["FirstName"], (float, int)):
-        return True
-    first_name = row["FirstName"].lower().replace('.', '')
-    last_name = row["LastName"].lower().replace('.', '')
-    if _is_in_exclusion(first_name, exclusion_list) or _is_in_exclusion(last_name, exclusion_list):
-        return True
-    elif len(first_name) == 1 and len(last_name) == 1:
-        return True
-    elif _has_digit(first_name) or _has_digit(last_name):
-        return True
+    for c in name_cols:
+        if isinstance(row[c], (float, int)):
+            return True
+        name = row[c].lower().replace('.', '')
+        if _is_in_exclusion(name, exclusion_list):
+            return True
+        if len(name) == 1:
+            return True
+        if _has_digit(name):
+            return True
     return False
