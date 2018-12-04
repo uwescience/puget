@@ -11,6 +11,8 @@
 	# 	    error = traceback)
 	# gc()
 
+# Fetch command line arguments
+# myArgs <- commandArgs(trailingOnly = TRUE)
 # ==========================================================================
 # Library
 # ==========================================================================
@@ -365,7 +367,7 @@ if(!require(lubridate)){
 # ==========================================================================
 
 	# write.csv(w1, paste0(path,"/Housing/links/WeightedLinks.csv"))
-	write.csv(df_sub, paste0(path,"HILD/PreLinkData_test.csv"))
+	write.csv(df_sub, paste0(path,"/HILD/PreLinkData_test.csv"))
 
 # ==========================================================================
 # End code
