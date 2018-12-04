@@ -14,38 +14,59 @@ def test_cluster_by_groups():
     df1 = pd.DataFrame({'individual_var': [1, 200, 3, 100, 1, 200, 3, 100],
                         'group_var': [1, 1, 2, 2, 1, 2, 1, 2]})
 
-    T = cluster.groups_co_occurrence(df1, 'individual_var', 'group_var')
-    true_T = np.array([[0, 1, 1, 0], [1, 0, 2, 1], [1, 2, 0, 1], [0, 1, 1, 0]])
-    npt.assert_equal(T, true_T)
+    for sparse in [True, False]:
+        T = cluster.groups_co_occurrence(df1, 'individual_var', 'group_var',
+                                        sparse=sparse)
+        if sparse:
+            T = T.toarray()
+        true_T = np.array([[0, 1, 1, 0], [1, 0, 2, 1], [1, 2, 0, 1],
+                           [0, 1, 1, 0]])
+        npt.assert_equal(T, true_T)
 
-    # Individual IDs are arbitrary (can be 100, 200, etc.):
-    df1_out = cluster.cluster(df1, 'individual_var', group_var='group_var')
-    true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
-                                                    1, 200, 3, 100],
-                                 'group_var': [1, 1, 2, 2, 1, 2, 1, 2],
-                                 'cluster': [1, 1, 1, 1, 1, 1, 1, 1]})
 
-    pdt.assert_frame_equal(df1_out.sort_index(axis=1),
-                           true_df1_out.sort_index(axis=1))
+        # Individual IDs are arbitrary (can be 100, 200, etc.):
+        df1_out = cluster.cluster(df1,
+                                  'individual_var',
+                                  group_var='group_var',
+                                  sparse=sparse)
 
-    #  In the second case, individuals are unlinked into two clusters:
-    df2 = pd.DataFrame({'individual_var': [1, 2, 3, 4, 1, 2, 3, 4],
-                        'group_var': [1, 1, 3, 3, 1, 1, 3, 3]})
+        true_df1_out = pd.DataFrame({'individual_var': [1, 200, 3, 100,
+                                                        1, 200, 3, 100],
+                                    'group_var': [1, 1, 2, 2, 1, 2, 1, 2],
+                                    'cluster': [1, 1, 1, 1, 1, 1, 1, 1]})
 
-    T = cluster.groups_co_occurrence(df2, 'individual_var', 'group_var')
-    true_T = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-    T = cluster.groups_co_occurrence(df2, 'individual_var', 'group_var')
-    npt.assert_equal(T, true_T)
+        pdt.assert_frame_equal(df1_out.sort_index(axis=1),
+                               true_df1_out.sort_index(axis=1))
 
-    #  Cluster's are designated as [1, 2, 3, ...], even while the group
-    # variable can have arbitrary values (e.g., [1, 3, 100003, ...]):
-    df2_out = cluster.cluster(df2, 'individual_var', group_var='group_var')
-    true_df2_out = pd.DataFrame({'individual_var': [1, 2, 3, 4, 1, 2, 3, 4],
-                                 'group_var': [1, 1, 3, 3, 1, 1, 3, 3],
-                                 'cluster': [1, 1, 2, 2, 1, 1, 2, 2]})
+        #  In the second case, individuals are unlinked into two clusters:
+        df2 = pd.DataFrame({'individual_var': [1, 2, 3, 4, 1, 2, 3, 4],
+                            'group_var': [1, 1, 3, 3, 1, 1, 3, 3]})
 
-    pdt.assert_frame_equal(df2_out.sort_index(axis=1),
-                           true_df2_out.sort_index(axis=1))
+        T = cluster.groups_co_occurrence(df2,
+                                         'individual_var',
+                                         'group_var',
+                                         sparse=sparse)
+        if sparse:
+            T = T.toarray()
+        true_T = np.array([[0, 1, 0, 0],
+                          [1, 0, 0, 0],
+                          [0, 0, 0, 1],
+                          [0, 0, 1, 0]])
+        T = cluster.groups_co_occurrence(df2, 'individual_var', 'group_var')
+        npt.assert_equal(T, true_T)
+
+        #  Cluster's are designated as [1, 2, 3, ...], even while the group
+        # variable can have arbitrary values (e.g., [1, 3, 100003, ...]):
+        df2_out = cluster.cluster(df2,
+                                  'individual_var',
+                                  group_var='group_var',
+                                  sparse=sparse)
+        true_df2_out = pd.DataFrame({'individual_var': [1, 2, 3, 4, 1, 2, 3, 4],
+                                    'group_var': [1, 1, 3, 3, 1, 1, 3, 3],
+                                    'cluster': [1, 1, 2, 2, 1, 1, 2, 2]})
+
+        pdt.assert_frame_equal(df2_out.sort_index(axis=1),
+                            true_df2_out.sort_index(axis=1))
 
 
 def test_cluster_by_time():
