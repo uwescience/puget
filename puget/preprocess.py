@@ -570,7 +570,8 @@ def get_client(county=None, file_spec=None, data_dir=None, paths=None,
         df['exclude_by_name'] = df.apply(_name_exclude,
                                         args=[name_cols, NAME_EXCLUSION],
                                         axis=1)
-        df = df[~df["exclude_by_name"]]
+        # The function returns True for keepers:
+        df = df[df["exclude_by_name"]]
         df.drop(['exclude_by_name'], axis=1, inplace=True)
 
     return df
@@ -919,7 +920,6 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
                                         METADATA_FILES['client']))
     client_pid_column = client_metadata['person_ID']
     dob_column = client_metadata['dob_column']
-
     n_bad_dob = 0
     # set any DOBs to NaNs if they are in the future relative to the earliest
     # enrollment. Also set to NaN if the DOB is too early (pre 1900)
@@ -977,7 +977,7 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
 
     print('Found %d entries with bad DOBs' % n_bad_dob)
 
-    enroll_merge = pd.merge(left=enroll_merge, right=client, how='left',
+    enroll_merge = pd.merge(left=enroll_merge, right=client, how='right',
                             left_on=enrollment_pid_column,
                             right_on=client_pid_column)
 
@@ -1069,6 +1069,7 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
             project_prid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(project_prid_column, axis=1)
 
+
     return enroll_merge
 
 
@@ -1085,16 +1086,18 @@ def _name_exclude(row,
                   name_cols,
                   exclusion_list=NAME_EXCLUSION):
     """
-    Criteria for name exclusion
+    Criteria for name exclusion. Returns True for keepers.
     """
     for c in name_cols:
+        if pd.isnull(row[c]):
+            return False
         if isinstance(row[c], (float, int)):
-            return True
+            return False
         name = row[c].lower().replace('.', '')
         if _is_in_exclusion(name, exclusion_list):
-            return True
+            return False
         if len(name) == 1:
-            return True
+            return False
         if _has_digit(name):
-            return True
-    return False
+            return False
+    return True

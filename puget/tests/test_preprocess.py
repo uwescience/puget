@@ -847,7 +847,10 @@ def test_merge():
                                                     'Transitional Housing',
                                                     'Transitional Housing',
                                                     'Emergency Shelter']})
-
+            if name_exclusion:
+                select = df_test['first_name'] == "noname"
+                df_test = df_test[~select]
+                df_test = df_test.reset_index(drop=True)
             # sort because column order is not assured because started with dicts
             df = df.sort_index(axis=1)
             df_test = df_test.sort_index(axis=1)
