@@ -62,4 +62,4 @@ MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'puget': [pjoin('data', '*'), pjoin('data', 'metadata', '*')]}
 REQUIRES = ["numpy", "pandas"]
-SCRIPTS = ['scripts/']
+SCRIPTS = ['scripts/merge_test.R']
