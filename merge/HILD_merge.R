@@ -3,7 +3,6 @@
 # PHA and HMIS merge
 # Tim Thomas - t77@uw.edu
 # ==========================================================================
-#! /usr/bin/Rscript --vanilla
 rm(list=ls())
 
 # Fetch command line arguments
