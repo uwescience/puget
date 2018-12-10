@@ -1,3 +1,4 @@
+#! /usr/bin/Rscript --vanilla --default-packages=utils
 # ==========================================================================
 # PHA and HMIS merge
 # Tim Thomas - t77@uw.edu
