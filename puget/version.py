@@ -1,5 +1,6 @@
 """Version definition for puget."""
 from os.path import join as pjoin
+import glob
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 _version_major = 0
@@ -62,4 +63,4 @@ MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'puget': [pjoin('data', '*'), pjoin('data', 'metadata', '*')]}
 REQUIRES = ["numpy", "pandas"]
-SCRIPTS = ['scripts/merge_test.R']
+SCRIPTS = glob.glob('scripts/*')
