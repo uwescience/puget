@@ -20,5 +20,5 @@
            "WorldWarII", "KoreanWar", "VietnamWar", "DesertStorm",
            "AfghanistanOEF", "IraqOIF", "IraqOND", "OtherTheater"],
 "numeric_code":[ "Gender", "MilitaryBranch", "DischargeStatus"],
-"name_columns :["FirstName", "LastName"]
+"name_columns" :["FirstName", "LastName"]
 }
