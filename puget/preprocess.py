@@ -45,6 +45,10 @@ CATEGORICAL_UNKNOWN = [8, 9, 99]
 # entry/exit suffixes for columns
 ENTRY_EXIT_SUFFIX = ['_entry', '_exit', '_update']
 
+# Names that should be excluded:
+NAME_EXCLUSION = ["consent", "refused", "anonymous", "client",
+                  "refsued", "noname", "unknown"]
+
 # dict of default metadata file names
 METADATA_FILES = {'enrollment': 'enrollment.json',
                   'exit': 'exit.json',
@@ -57,6 +61,7 @@ METADATA_FILES = {'enrollment': 'enrollment.json',
 
 for k, v in METADATA_FILES.items():
     METADATA_FILES[k] = op.join(DATA_PATH, 'metadata', v)
+
 
 file_path_boilerplate = (
     """
@@ -118,7 +123,7 @@ def read_table(file_spec, county=None, data_dir=None, paths=None,
                columns_to_drop=None, categorical_var=None,
                categorical_unknown=CATEGORICAL_UNKNOWN,
                time_var=None, duplicate_check_columns=None, dedup=True,
-               encoding=None):
+               encoding=None, name_columns=None):
     """
     Read in any .csv table from multiple folders in the raw data.
 
@@ -444,7 +449,8 @@ get_exit.__doc__ = get_exit.__doc__ % (file_path_boilerplate,
 
 
 def get_client(county=None, file_spec=None, data_dir=None, paths=None,
-               metadata_file=METADATA_FILES['client']):
+               metadata_file=METADATA_FILES['client'],
+               name_exclusion=False):
     """
     Read in the raw Client tables.
 
@@ -558,6 +564,15 @@ def get_client(county=None, file_spec=None, data_dir=None, paths=None,
     #   info to determine if DOBs are sane
     df = df.drop_duplicates(duplicate_check_columns, keep='last',
                             inplace=False)
+
+    if name_exclusion:
+        name_cols = metadata.pop('name_columns')
+        df['exclude_by_name'] = df.apply(_name_exclude,
+                                        args=[name_cols, NAME_EXCLUSION],
+                                        axis=1)
+        # The function returns True for keepers:
+        df = df[df["exclude_by_name"]]
+        df.drop(['exclude_by_name'], axis=1, inplace=True)
 
     return df
 
@@ -826,8 +841,9 @@ get_project.__doc__ = get_project.__doc__ % (file_path_boilerplate,
                                              metdata_boilerplate)
 
 
+
 def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
-                 paths=None, files=None, groups=True):
+                 paths=None, files=None, groups=True, name_exclusion=False):
     """ Run all functions that clean up raw tables separately, and merge them
         all into the enrollment table, where each row represents the project
         enrollment of an individual.
@@ -896,13 +912,14 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
     # Merge client in
     client = get_client(county=county, file_spec=files.get('client', None),
                         metadata_file=meta_files.get('client', None),
-                        data_dir=data_dir, paths=paths)
+                        data_dir=data_dir, paths=paths,
+                        name_exclusion=name_exclusion)
+
     print('client n_rows:', len(client))
     client_metadata = get_metadata_dict(meta_files.get('client',
                                         METADATA_FILES['client']))
     client_pid_column = client_metadata['person_ID']
     dob_column = client_metadata['dob_column']
-
     n_bad_dob = 0
     # set any DOBs to NaNs if they are in the future relative to the earliest
     # enrollment. Also set to NaN if the DOB is too early (pre 1900)
@@ -960,7 +977,7 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
 
     print('Found %d entries with bad DOBs' % n_bad_dob)
 
-    enroll_merge = pd.merge(left=enroll_merge, right=client, how='left',
+    enroll_merge = pd.merge(left=enroll_merge, right=client, how='right',
                             left_on=enrollment_pid_column,
                             right_on=client_pid_column)
 
@@ -1052,4 +1069,35 @@ def merge_tables(county=None, meta_files=METADATA_FILES, data_dir=None,
             project_prid_column in enroll_merge.columns:
         enroll_merge = enroll_merge.drop(project_prid_column, axis=1)
 
+
     return enroll_merge
+
+
+def _has_digit(my_str):
+    return any(char.isdigit() for char in my_str)
+
+def _is_in_exclusion(my_str, exclusion_list):
+    for item in exclusion_list:
+        if item in my_str:
+            return True
+    return False
+
+def _name_exclude(row,
+                  name_cols,
+                  exclusion_list=NAME_EXCLUSION):
+    """
+    Criteria for name exclusion. Returns True for keepers.
+    """
+    for c in name_cols:
+        if pd.isnull(row[c]):
+            return False
+        if isinstance(row[c], (float, int)):
+            return False
+        name = row[c].lower().replace('.', '')
+        if _is_in_exclusion(name, exclusion_list):
+            return False
+        if len(name) == 1:
+            return False
+        if _has_digit(name):
+            return False
+    return True
