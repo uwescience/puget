@@ -3,7 +3,7 @@
 rm(list=ls())
 
 # Fetch command line arguments
-args <- commandArgs(trailingOnly = TRUE)
+data_path <- commandArgs(trailingOnly = TRUE)
 # ==========================================================================
 # Library
 # ==========================================================================
@@ -35,12 +35,10 @@ if(!require(lubridate)){
 # Data pull
 # ==========================================================================
 
-path <- "/home/ubuntu/data"
-
-hmis <- fread(paste0(path,"/HMIS/2016/puget_preprocessed.csv")) %>%
+hmis <- fread(paste0(data_path,"/HMIS/2016/puget_preprocessed.csv")) %>%
 		mutate(pid0 = paste("HMIS0_",PersonalID,sep=""))
 
-pha <- fread(paste0(path,"/HILD/pha_longitudinal.csv")) %>%
+pha <- fread(paste0(data_path,"/HILD/pha_longitudinal.csv")) %>%
 		mutate(pid0 = paste("PHA0_",pid, sep = ""))
 
 
@@ -156,7 +154,4 @@ df_sub <- df %>% filter(!grepl("REFUSED",lname),
 						!grepl("ANONYMOUS",lname),
 						!grepl("ANONYMOUS",fname))
 
-write.csv(df_sub, paste0(path,"/HILD/PreLinkData_test.csv"))
-
-cat(str(args))
-
+write.csv(df_sub, paste0(data_path,"/HILD/PreLinkData_test.csv"))
