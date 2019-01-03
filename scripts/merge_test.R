@@ -3,7 +3,7 @@
 rm(list=ls())
 
 # Fetch command line arguments
-# myArgs <- commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
 # ==========================================================================
 # Library
 # ==========================================================================
@@ -158,4 +158,5 @@ df_sub <- df %>% filter(!grepl("REFUSED",lname),
 
 write.csv(df_sub, paste0(path,"/HILD/PreLinkData_test.csv"))
 
+str(args)
 
