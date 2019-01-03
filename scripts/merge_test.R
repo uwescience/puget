@@ -158,5 +158,5 @@ df_sub <- df %>% filter(!grepl("REFUSED",lname),
 
 write.csv(df_sub, paste0(path,"/HILD/PreLinkData_test.csv"))
 
-str(args)
+print(args)
 
