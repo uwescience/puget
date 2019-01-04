@@ -3,7 +3,9 @@
 rm(list=ls())
 
 # Fetch command line arguments
-data_path <- commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
+data_path <- args[1]
+
 # ==========================================================================
 # Library
 # ==========================================================================
