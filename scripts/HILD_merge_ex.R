@@ -4,7 +4,14 @@ rm(list=ls())
 
 # Fetch command line arguments
 args <- commandArgs(trailingOnly = TRUE)
-data_path <- args[1]
+
+data_path <- args[1] 
+hild_dir <- args[2]
+hmis_dir <- args[3]
+
+print(data_path)
+print(hild_dir)
+print(hmis_dir)
 
 # ==========================================================================
 # Library
