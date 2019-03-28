@@ -1,12 +1,13 @@
 #! /usr/bin/Rscript --vanilla --default-packages=utils
-# ==========================================================================
-# PHA and HMIS merge
-# Tim Thomas - t77@uw.edu
-# ==========================================================================
+
 rm(list=ls())
 
 # Fetch command line arguments
-# myArgs <- commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
+
+hild_dir <- args[1]
+hmis_dir <- args[2]
+
 # ==========================================================================
 # Library
 # ==========================================================================
@@ -38,20 +39,12 @@ if(!require(lubridate)){
 # Data pull
 # ==========================================================================
 
-path <- "/home/ubuntu/data"
-
-hmis <- fread(paste0(path,"/HMIS/2016/puget_preprocessed.csv")) %>%
+hmis <- fread(paste0(hmis_dir,"puget_preprocessed.csv")) %>%
 		mutate(pid0 = paste("HMIS0_",PersonalID,sep=""))
 
-pha <- fread(paste0(path,"/HILD/pha_longitudinal.csv")) %>%
+pha <- fread(paste0(hild_dir,"pha_longitudinal.csv")) %>%
 		mutate(pid0 = paste("PHA0_",pid, sep = ""))
 
-
-# ==========================================================================
-# Data prep
-# ==========================================================================
-
-### subset bad birthdays Create bad dob - frequent january 1 dob
 
 pha_bad_dob <- data.frame(table(ymd(pha$dob))) %>%
 				rename(dob = Var1) %>%
@@ -160,33 +153,9 @@ df <- bind_rows(pha.rl,hmis.rl) %>%
 			dob1_d = day(dob1)) %>%
 	distinct()
 
-### Subset out refuesed names
 df_sub <- df %>% filter(!grepl("REFUSED",lname),
 						!grepl("REFUSED",fname),
 						!grepl("ANONYMOUS",lname),
 						!grepl("ANONYMOUS",fname))
 
-#=======================================================================
-# Codebook: PID's and SSN's
-# pid0 = personal ID from pha and hmis - Alastair's linkage and HMIS ID's
-# pid1 = generated pid by Tim within pha and hmis - unique id for each row
-# pid2 = generated pid by Tim after df merge - unique id for each row
-# ssn_dq =
-#	 1 = 9-digit ssn or HMIS dq == 1
-#	 2 = less than 9 digits or HMIS dq == 2
-#    3 = NA, all same digit, or HMIS dq == 3
-# ssn  = original ssn
-# ssn1 = ssn quality == 1 and 9 digits
-# dob1 = dob that is not in the list of very frequent 1/1 dates
-#=======================================================================
-
-
-# ==========================================================================
-# Save file
-# ==========================================================================
-
-write.csv(df_sub, paste0(path,"/HILD/PreLinkData_test.csv"))
-
-# ==========================================================================
-# End code
-# ==========================================================================
+write.csv(df_sub, paste0(hild_dir,"PreLinkData.csv"))
