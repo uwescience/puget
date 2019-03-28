@@ -19,5 +19,6 @@
            "NativeHIOtherPacific", "White", "Ethnicity", "VeteranStatus",
            "WorldWarII", "KoreanWar", "VietnamWar", "DesertStorm",
            "AfghanistanOEF", "IraqOIF", "IraqOND", "OtherTheater"],
-"numeric_code":[ "Gender", "MilitaryBranch", "DischargeStatus"]
+"numeric_code":[ "Gender", "MilitaryBranch", "DischargeStatus"],
+"name_columns" :["FirstName", "LastName"]
 }
