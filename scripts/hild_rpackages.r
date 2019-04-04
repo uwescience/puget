@@ -2,18 +2,7 @@
 
 # Function to load libraries without halting subprocess call in python
 # Need to specify specific repository non cran libraries 
-
-required_packages <- list(
-   c("devtools", "cran"),
-   c("tidyverse","dev", "tidyverse/tidyverse"),
-   c("lubridate", "dev", "tidyverse/lubridate"),
-   c("colorout", "dev", "jalvesaq/colorout"),
-   c("BiocManager", "cran"),
-   c("IRanges", "other", "BiocManager"),
-   c("data.table", "cran"),
-   c("magrittr", "cran"),
-   c("igraph", "cran")
-)
+# Needs a list with c("package-name", "cran/dev/other", "if dev/other repo name")
 
 install_required_packages <- function() {
     for(package in required_packages) {
@@ -47,6 +36,20 @@ install_required_packages <- function() {
                 }
     }   
 }
+
+# hild list of r packages being used to process data
+
+required_packages <- list(
+   c("devtools", "cran"),
+   c("tidyverse","dev", "tidyverse/tidyverse"),
+   c("lubridate", "dev", "tidyverse/lubridate"),
+   c("colorout", "dev", "jalvesaq/colorout"),
+   c("BiocManager", "cran"),
+   c("IRanges", "other", "BiocManager"),
+   c("data.table", "cran"),
+   c("magrittr", "cran"),
+   c("igraph", "cran")
+)
 
 install_required_packages()
 
