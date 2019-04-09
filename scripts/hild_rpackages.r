@@ -4,7 +4,7 @@
 # Need to specify specific repository non cran libraries 
 # Needs a list with c("package-name", "cran/dev/other", "if dev/other repo name")
 
-install_required_packages <- function() {
+hild_rpackages <- function() {
     for(package in required_packages) {
         is_installed <- require(package[[1]], character.only=T, quietly=T)
         if(!is_installed & package[[2]] == "dev") {
@@ -51,5 +51,5 @@ required_packages <- list(
    c("igraph", "cran")
 )
 
-install_required_packages()
+hild_rpackages()
 
