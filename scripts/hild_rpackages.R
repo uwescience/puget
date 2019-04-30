@@ -1,8 +1,22 @@
 #! /usr/bin/Rscript --vanilla --default-package=utils
 
-# Function to load libraries without halting subprocess call in python
 # Need to specify specific repository non cran libraries 
 # Needs a list with c("package-name", "cran/dev/other", "if dev/other repo name")
+# hild list of r packages being used to process data
+
+required_packages <- list(
+   c("devtools", "cran"),
+   c("tidyverse","dev", "tidyverse/tidyverse"),
+   c("lubridate", "dev", "tidyverse/lubridate"),
+   c("colorout", "dev", "jalvesaq/colorout"),
+   c("BiocManager", "cran"),
+   c("IRanges", "other", "BiocManager"),
+   c("data.table", "cran"),
+   c("magrittr", "cran"),
+   c("igraph", "cran")
+)
+
+# Function to load libraries without halting subprocess call in python
 
 hild_rpackages <- function() {
     for(package in required_packages) {
@@ -13,7 +27,7 @@ hild_rpackages <- function() {
             is_installed <- require(package[[1]], character.only=T, quietly=T)
             if(!is_installed) {
                 stop(paste("ERROR: can not install,", package[[1]], "install manually"))
-            }
+            } 
         }
         if(!is_installed & package[[2]] == "cran") {
             install.packages(package[[1]], repos = "http://cran.us.r-project.org")
@@ -36,20 +50,3 @@ hild_rpackages <- function() {
                 }
     }   
 }
-
-# hild list of r packages being used to process data
-
-required_packages <- list(
-   c("devtools", "cran"),
-   c("tidyverse","dev", "tidyverse/tidyverse"),
-   c("lubridate", "dev", "tidyverse/lubridate"),
-   c("colorout", "dev", "jalvesaq/colorout"),
-   c("BiocManager", "cran"),
-   c("IRanges", "other", "BiocManager"),
-   c("data.table", "cran"),
-   c("magrittr", "cran"),
-   c("igraph", "cran")
-)
-
-hild_rpackages()
-
