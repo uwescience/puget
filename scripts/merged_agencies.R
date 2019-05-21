@@ -6,8 +6,6 @@ hild_dir <- args[1]
 hmis_dir <- args[2]
 
 if(!require(colorout)){
-  !requireNamespace("devtools", quietly = TRUE)
-  install.packages("devtools")
   devtools::install_github("jalvesaq/colorout")
   require(colorout)
 }
@@ -30,8 +28,6 @@ if(!require(IRanges)){
 }
 
 if(!require(lubridate)){
-  !requireNamespace("devtools", quietly = TRUE)
-  install.packages("devtools")
   devtools::install_github("tidyverse/lubridate")
   require(lubridate)
 }
@@ -42,8 +38,6 @@ if(!require(data.table)){
 }
 
 if(!require(tidyverse)){
-  !requireNamespace("devtools", quietly = TRUE)
-  install.packages("devtools")
   devtools::install_github("tidyverse/tidyverse")
   require(tidyverse)
 }
