@@ -50,3 +50,5 @@ hild_rpackages <- function() {
                 }
     }   
 }
+
+hild_rpackages()
