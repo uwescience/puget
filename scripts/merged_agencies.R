@@ -1,3 +1,10 @@
+#! /usr/bin/Rscript --vanilla --default-packages=utils
+
+args <- commandArgs(trailingOnly = TRUE)
+
+hild_dir <- args[1]
+hmis_dir <- args[2]
+
 if(!require(colorout)){
   !requireNamespace("devtools", quietly = TRUE)
   install.packages("devtools")
@@ -41,39 +48,20 @@ if(!require(tidyverse)){
   require(tidyverse)
 }
 
-# ==========================================================================
-# Data
-# ==========================================================================
-
-usr <- "t77"
-links <-
-  fread(paste0("/home/",usr,"/data/HILD/ids_with_record_linkage_pids.csv"))
-# Linked data between PHA and HMIS made by Ariel
-# You can find on the S3 bucket hild-datasets
-
-# clusters_old <- fread("/home/ubuntu/data/HILD/clustered_merged_agencies.csv")
-# clusters_id <- clusters	%>%
-# 				select(linkage_PID, cluster) %>%
-# 				distinct()
+links <- fread(paste0(hild_dir, "PHA_HMIS_linked.csv"))
 
 hmis <-
-  fread(paste0("/home/",usr,"/data/HMIS/2016/puget_preprocessed.csv")) %>%
+  fread(paste0(hmis_dir, "puget_preprocessed.csv")) %>%
   mutate(pid0 = paste("HMIS0_",PersonalID,sep=""),
          pid1 = paste0("HMIS1_",
                        stringr::str_pad(seq(1,nrow(.)),6,pad='0')))
-# glimpse		# Located in S3 bucket kcdhs/HMIS
 
 pha <-
-  fread(paste0("/home/",usr,"/data/HILD/pha_longitudinal.csv")) %>%
+  fread(paste0(hild_dir, "pha_longitudinal.csv")) %>%
   # pid comes from PHA, then pid0 is an id for our purposes
   mutate(pid0 = paste("PHA0_", pid, sep = ""),
          pid1 = paste0("PHA1_",
-                       stringr::str_pad(seq(1,nrow(.)),6,pad='0')))
-
-# -----
-# NOTE:
-# See codebooks/codebook.md for definitions of the above codes
-#
+                       stringr::str_pad(seq(1,nrow(.)),6,pad='0'))
 
 # ==========================================================================
 # Join PHA and HMIS Data
@@ -188,4 +176,4 @@ merged_agencies <-
                                        hmis_proj_type, ",",
                                        hmis_proj_name, ","), NA))
 
-gc()
+write_csv(df_sub, paste0(hild_dir,"merged_agencies_test.csv"))
