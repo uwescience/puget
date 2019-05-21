@@ -61,7 +61,7 @@ pha <-
   # pid comes from PHA, then pid0 is an id for our purposes
   mutate(pid0 = paste("PHA0_", pid, sep = ""),
          pid1 = paste0("PHA1_",
-                       stringr::str_pad(seq(1,nrow(.)),6,pad='0'))
+                       stringr::str_pad(seq(1,nrow(.)),6,pad='0')))
 
 # ==========================================================================
 # Join PHA and HMIS Data
@@ -107,26 +107,25 @@ hmis_c <-
 #
 # PHA
 # --------------------------------------------------------------------------
-pha_c <-
-  pha %>%
+pha_c <- pha %>%
   mutate(startdate = lubridate::ymd(startdate),
          enddate = lubridate::ymd(enddate),
          dob = lubridate::ymd(dob),
          relcode = factor(relcode),
          r_aian = if_else(r_aian_new == 1 |
-                            r_aian_new_alone == 1, 1, 0),
+                            race_new == "AIAN only", 1, 0),
          r_asian = if_else(r_asian_new == 1 |
-                             r_asian_new_alone == 1, 1, 0),
+                             race_new == "Asian only", 1, 0),
          r_black = if_else(r_black_new == 1 |
-                             r_black_new_alone == 1, 1, 0),
+                             race_new == "Black only", 1, 0),
          r_nhpi = if_else(r_nhpi_new == 1 |
-                            r_nhpi_new_alone == 1, 1, 0),
+                            race_new == "NHPI only", 1, 0),
          r_white = if_else(r_white_new == 1 |
-                             r_white_new_alone == 1, 1, 0),
-         r_multi = r_multi_new,
+                             race_new == "White only", 1, 0),
+         r_multi = if_else(race_new == "Multiple race", 1, 0),
          r_ethnicity = r_hisp_new,
-         race_cat = race2,
-         hh_id = paste(agency_new, hhold_id_new, sep = "_"),
+         race_cat = race_new,
+         hh_id = paste(agency_new, hh_id_new, sep = "_"),
          gender = if_else(gender2 == "Female", "Fem",
                           if_else(gender2 == "Male", "Mal",
                                   NA_character_))) %>%
@@ -156,7 +155,6 @@ pha_c <-
          ha_vouch_type = vouch_type_final,
          ha_op_type = operator_type,
          ha_portfolio = portfolio_final)
-
 #
 # Agency Data Merge w/ linkages
 # --------------------------------------------------------------------------
@@ -176,4 +174,4 @@ merged_agencies <-
                                        hmis_proj_type, ",",
                                        hmis_proj_name, ","), NA))
 
-write_csv(df_sub, paste0(hild_dir,"merged_agencies_test.csv"))
+write_csv(merged_agencies, paste0(hild_dir,"merged_agencies.csv"))
