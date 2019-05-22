@@ -1,16 +1,10 @@
 #! /usr/bin/Rscript --vanilla --default-packages=utils
 
-rm(list=ls())
-
-# Fetch command line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
 hild_dir <- args[1]
 hmis_dir <- args[2]
 
-# ==========================================================================
-# Library
-# ==========================================================================
 if(!require(devtools)){
 	    install.packages("devtools")
 	    require(devtools)
