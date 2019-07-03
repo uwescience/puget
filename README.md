@@ -4,17 +4,20 @@ Tools for munging data from Puget Sound Region tri-county HMIS.
 
 ## Modules:
 - utils
-- king
-- pierce
-- snohomish
+- preprocess
+- cluster
+- recordlinkage
 - tests
 
 ## Dependencies:
 
 - pandas
 - numpy
+- scipy
+- networkx
+- recordlinkage
 - matplotlib
-- nose (for testing)
+- pytest (for testing)
 - sphinx (for docs)
 
 

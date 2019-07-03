@@ -22,7 +22,8 @@ jobs:
           name: install
           command: |
             source activate ${ENV_NAME}
-            python setup.py build_ext --force --inplace
+            pip install recordlinkage
+            pip install .
       - run:
           name: run puget tests
           command: |
