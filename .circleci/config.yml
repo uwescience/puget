@@ -26,7 +26,7 @@ jobs:
             pip install .
       - run:
           name: run puget tests
-            command: |
+          command: |
             source activate ${ENV_NAME}
             mkdir test-reports
             python -m pytest puget -v --cov=puget --cov-config=.coveragerc --cov-report xml:./coverage.xml
