@@ -20,16 +20,16 @@ jobs:
           command: ./.circleci/install-circle.sh
       - run:
           name: install
+          # the pip install command below will install recordlinkage, which is not currently available on conda-forge
           command: |
             source activate ${ENV_NAME}
-            pip install recordlinkage
             pip install .
       - run:
           name: run puget tests
-          command: |
+            command: |
             source activate ${ENV_NAME}
             mkdir test-reports
-            python -m pytest puget -v --cov=puget --cov-config=.coveragerc --cov-report xml:./coverage.xml --junitxml=test-reports/xunit.xml
+            python -m pytest puget -v --cov=puget --cov-config=.coveragerc --cov-report xml:./coverage.xml
       - save_cache:
           key: deps-{{ .Branch }}-{{ checksum ".circleci/puget_tests.yml" }}
           paths:
