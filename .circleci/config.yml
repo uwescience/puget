@@ -30,7 +30,7 @@ jobs:
             mkdir test-reports
             python -m pytest puget -v --cov=puget --cov-config=.coveragerc --cov-report xml:./coverage.xml --junitxml=test-reports/xunit.xml
       - save_cache:
-          key: deps-{{ .Branch }}-{{ checksum "ci/puget_tests.yml" }}
+          key: deps-{{ .Branch }}-{{ checksum ".circleci/puget_tests.yml" }}
           paths:
             - "/opt/conda/envs/${ENV_NAME}/"
       - store_test_results:
