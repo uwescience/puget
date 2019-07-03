@@ -62,5 +62,5 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'puget': [pjoin('data', '*'), pjoin('data', 'metadata', '*')]}
-REQUIRES = ["numpy", "pandas"]
+REQUIRES = ["numpy", "pandas", "scipy"]
 SCRIPTS = glob.glob('scripts/*')
