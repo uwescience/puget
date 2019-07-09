@@ -1,0 +1,53 @@
+version: 2.1
+orbs:
+  codecov: codecov/codecov@1.0.2 # to get this to work, had to opt-in to using third party orbs in Organization Security settings.
+jobs:
+  puget:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: continuumio/miniconda:latest
+    environment:
+      PYTHON: << parameters.python_version >>
+      ENV_NAME: puget_tests
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ .Branch }}-{{ checksum ".circleci/puget_tests.yml" }}
+      - run:
+          name: configure conda environment
+          command: ./.circleci/install-circle.sh
+      - run:
+          name: install
+          # the pip install command below will install recordlinkage, which is not currently available on conda-forge
+          command: |
+            source activate ${ENV_NAME}
+            pip install .
+      - run:
+          name: run puget tests
+          command: |
+            source activate ${ENV_NAME}
+            mkdir test-reports
+            python -m pytest puget -v --cov=puget --cov-config=.coveragerc --cov-report xml:./coverage.xml
+      - save_cache:
+          key: deps-{{ .Branch }}-{{ checksum ".circleci/puget_tests.yml" }}
+          paths:
+            - "/opt/conda/envs/${ENV_NAME}/"
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+      - codecov/upload:
+          file: ./coverage.xml
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - puget:
+          name: puget_3.6
+          python_version: "3.6"
+      - puget:
+          name: puget_3.7
+          python_version: "3.7"

@@ -1,0 +1,11 @@
+name: puget_tests
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - numpy
+  - pandas
+  - scipy
+  - networkx
+  - coverage
+  - pytest-cov
